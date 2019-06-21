@@ -5,6 +5,20 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 provider:
   name: aws
   runtime: go1.x
+  region: eu-west-1
+  environment:
+    STAGE: ${opt:stage, "dev"}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/*"
 
 package:
   exclude:
@@ -13,15 +27,45 @@ package:
     - ./bin/**
 
 functions:
-  hello:
-    handler: bin/hello
+
+  users-post:
+    handler: bin/users-post
     events:
       - http:
-          path: hello
-          method: get
-  world:
-    handler: bin/world
+          path: users
+          method: post
+          cors: true
+
+  users-login-post:
+    handler: bin/users-login-post
     events:
       - http:
-          path: world
-          method: get
+          path: users/login
+          method: post
+          cors: true
+
+resources:
+  Resources:
+    UserTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-user
+        AttributeDefinitions:
+          - AttributeName: Username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: Username
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    EmailUserTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-email-user
+        AttributeDefinitions:
+          - AttributeName: Email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: Email
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
