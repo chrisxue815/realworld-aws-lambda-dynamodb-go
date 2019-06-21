@@ -1,23 +1,11 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/service"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
-
-type RequestBody struct {
-	User UserRequest `json:"user"`
-}
-
-type UserRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
 
 type ResponseBody struct {
 	Username string `json:"username"`
@@ -28,27 +16,7 @@ type ResponseBody struct {
 }
 
 func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	requestBody := RequestBody{}
-	err := json.Unmarshal([]byte(request.Body), &requestBody)
-	if err != nil {
-		return util.NewErrorResponse(err)
-	}
-
-	user, err := service.GetUserByEmail(requestBody.User.Email)
-	if err != nil {
-		return util.NewErrorResponse(err)
-	}
-
-	password, err := service.Scrypt(requestBody.User.Password)
-	if err != nil {
-		return util.NewErrorResponse(err)
-	}
-
-	if !bytes.Equal(password, user.Password) {
-		return util.NewErrorResponse(errors.New("wrong password"))
-	}
-
-	token, err := service.GenerateToken(user.Username)
+	user, token, err := service.GetCurrentUser(request.Headers["Authorization"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}

@@ -44,6 +44,14 @@ functions:
           method: post
           cors: true
 
+  user-get:
+    handler: bin/user-get
+    events:
+      - http:
+          path: user
+          method: get
+          cors: true
+
 resources:
   Resources:
     UserTable:

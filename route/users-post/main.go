@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/service"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
 type RequestBody struct {
@@ -33,12 +31,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	requestBody := RequestBody{}
 	err := json.Unmarshal([]byte(request.Body), &requestBody)
 	if err != nil {
-		return model.NewErrorResponse(err)
+		return util.NewErrorResponse(err)
 	}
 
 	password, err := service.Scrypt(requestBody.User.Password)
 	if err != nil {
-		return model.NewErrorResponse(err)
+		return util.NewErrorResponse(err)
 	}
 
 	user := model.User{
@@ -47,14 +45,14 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		Password: password,
 	}
 
-	err = createUser(user)
+	err = service.CreateUser(user)
 	if err != nil {
-		return model.NewErrorResponse(err)
+		return util.NewErrorResponse(err)
 	}
 
-	token, err := service.GenerateJWT(user.Username)
+	token, err := service.GenerateToken(user.Username)
 	if err != nil {
-		return model.NewErrorResponse(err)
+		return util.NewErrorResponse(err)
 	}
 
 	responseBody := ResponseBody{
@@ -65,60 +63,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		Token:    token,
 	}
 
-	responseJSON, err := json.Marshal(responseBody)
-	if err != nil {
-		return model.NewErrorResponse(err)
-	}
-
-	response := events.APIGatewayProxyResponse{
-		StatusCode: 200,
-		Body:       string(responseJSON),
-	}
-
-	return response, nil
-}
-
-func createUser(user model.User) error {
-	userItem, err := dynamodbattribute.MarshalMap(user)
-	if err != nil {
-		return err
-	}
-
-	emailUser := model.EmailUser{
-		Email:    user.Email,
-		Username: user.Username,
-	}
-
-	emailUserItem, err := dynamodbattribute.MarshalMap(emailUser)
-	if err != nil {
-		return err
-	}
-
-	transaction := dynamodb.TransactWriteItemsInput{
-		TransactItems: []*dynamodb.TransactWriteItem{
-			{
-				Put: &dynamodb.Put{
-					TableName:           aws.String(model.UserTableName()),
-					Item:                userItem,
-					ConditionExpression: aws.String("attribute_not_exists(Username)"),
-				},
-			},
-			{
-				Put: &dynamodb.Put{
-					TableName:           aws.String(model.EmailUserTableName()),
-					Item:                emailUserItem,
-					ConditionExpression: aws.String("attribute_not_exists(Email)"),
-				},
-			},
-		},
-	}
-
-	_, err = service.DynamoDB().TransactWriteItems(&transaction)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return util.NewSuccessResponse(responseBody)
 }
 
 func main() {

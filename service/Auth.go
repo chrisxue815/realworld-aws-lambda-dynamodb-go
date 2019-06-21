@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/scrypt"
+	"strings"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func Scrypt(password string) ([]byte, error) {
 	return key, nil
 }
 
-func GenerateJWT(username string) (string, error) {
+func GenerateToken(username string) (string, error) {
 	now := time.Now().UTC()
 	exp := now.AddDate(0, 0, tokenExpirationDay).Unix()
 
@@ -36,7 +37,19 @@ func GenerateJWT(username string) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-func VerifyJWT(tokenString string) (string, error) {
+func VerifyAuthorization(auth string) (string, string, error) {
+	parts := strings.SplitN(auth, " ", 2)
+	if len(parts) != 2 || parts[0] != "Token" {
+		return "", "", errors.New("invalid authorization")
+	}
+
+	token := parts[1]
+
+	username, err := VerifyToken(token)
+	return username, token, err
+}
+
+func VerifyToken(tokenString string) (string, error) {
 	token, err := jwt.Parse(tokenString, validateToken)
 
 	if err != nil {
