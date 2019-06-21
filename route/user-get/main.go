@@ -18,7 +18,7 @@ type ResponseBody struct {
 func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user, token, err := service.GetCurrentUser(request.Headers["Authorization"])
 	if err != nil {
-		return util.NewErrorResponse(err)
+		return util.NewUnauthorizedResponse()
 	}
 
 	responseBody := ResponseBody{
@@ -29,7 +29,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		Token:    token,
 	}
 
-	return util.NewSuccessResponse(responseBody)
+	return util.NewSuccessResponse(200, responseBody)
 }
 
 func main() {

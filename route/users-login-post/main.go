@@ -61,7 +61,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		Token:    token,
 	}
 
-	return util.NewSuccessResponse(responseBody)
+	return util.NewSuccessResponse(200, responseBody)
 }
 
 func main() {

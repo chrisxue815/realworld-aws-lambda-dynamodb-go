@@ -45,3 +45,10 @@ func NewErrorResponseBody(msg string) ErrorResponseBody {
 		},
 	}
 }
+
+func NewUnauthorizedResponse() (events.APIGatewayProxyResponse, error) {
+	response := events.APIGatewayProxyResponse{
+		StatusCode: 401,
+	}
+	return response, nil
+}

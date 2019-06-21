@@ -5,14 +5,14 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func NewSuccessResponse(v interface{}) (events.APIGatewayProxyResponse, error) {
+func NewSuccessResponse(statusCode int, v interface{}) (events.APIGatewayProxyResponse, error) {
 	responseJSON, err := json.Marshal(v)
 	if err != nil {
 		return NewErrorResponse(err)
 	}
 
 	response := events.APIGatewayProxyResponse{
-		StatusCode: 200,
+		StatusCode: statusCode,
 		Body:       string(responseJSON),
 	}
 
