@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
@@ -40,12 +41,28 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	newUser, err := updateUser(oldUser, requestBody)
-	if err != nil {
-		return util.NewErrorResponse(err)
+	var password []byte
+	if requestBody.User.Password != "" {
+		const minPasswordLength = 0
+		if len(requestBody.User.Password) < minPasswordLength {
+			return util.NewErrorResponse(util.NewInputError("password", fmt.Sprintf("must be at least %d characters in length", minPasswordLength)))
+		}
+
+		password, err = service.Scrypt(requestBody.User.Password)
+		if err != nil {
+			return util.NewErrorResponse(err)
+		}
 	}
 
-	err = service.UpdateUser(oldUser, newUser)
+	newUser := model.User{
+		Username: oldUser.Username,
+		Email:    requestBody.User.Email,
+		Password: password,
+		Image:    requestBody.User.Image,
+		Bio:      requestBody.User.Bio,
+	}
+
+	err = service.UpdateUser(*oldUser, newUser)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -59,30 +76,6 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	return util.NewSuccessResponse(200, responseBody)
-}
-
-func updateUser(newUser model.User, requestBody RequestBody) (model.User, error) {
-	if requestBody.User.Email != "" {
-		newUser.Email = requestBody.User.Email
-	}
-
-	if requestBody.User.Image != "" {
-		newUser.Image = requestBody.User.Image
-	}
-
-	if requestBody.User.Bio != "" {
-		newUser.Bio = requestBody.User.Bio
-	}
-
-	if requestBody.User.Password != "" {
-		password, err := service.Scrypt(requestBody.User.Password)
-		if err != nil {
-			return model.User{}, err
-		}
-		newUser.Password = password
-	}
-
-	return newUser, nil
 }
 
 func main() {

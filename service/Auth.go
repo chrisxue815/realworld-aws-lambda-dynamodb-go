@@ -1,8 +1,8 @@
 package service
 
 import (
-	"errors"
 	"fmt"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/scrypt"
 	"strings"
@@ -40,7 +40,7 @@ func GenerateToken(username string) (string, error) {
 func VerifyAuthorization(auth string) (string, string, error) {
 	parts := strings.SplitN(auth, " ", 2)
 	if len(parts) != 2 || parts[0] != "Token" {
-		return "", "", errors.New("invalid authorization")
+		return "", "", util.NewInputError("Authorization", "invalid")
 	}
 
 	token := parts[1]
@@ -57,21 +57,21 @@ func VerifyToken(tokenString string) (string, error) {
 	}
 
 	if token == nil || !token.Valid {
-		return "", errors.New("invalid token")
+		return "", util.NewInputError("Authorization", "invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("invalid token: invalid claims")
+		return "", util.NewInputError("Authorization", "invalid claims")
 	}
 
 	if !claims.VerifyExpiresAt(time.Now().UTC().Unix(), true) {
-		return "", errors.New("invalid token: token expired")
+		return "", util.NewInputError("Authorization", "token expired")
 	}
 
 	username, ok := claims["sub"].(string)
 	if !ok {
-		return "", errors.New("invalid token: sub missing")
+		return "", util.NewInputError("Authorization", "sub missing")
 	}
 
 	return username, nil

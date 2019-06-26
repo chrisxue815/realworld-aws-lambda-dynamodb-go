@@ -45,7 +45,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		Password: password,
 	}
 
-	err = service.CreateUser(user)
+	err = service.PutUser(user)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}

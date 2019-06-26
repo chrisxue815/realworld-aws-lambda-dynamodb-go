@@ -11,13 +11,12 @@ provider:
   iamRoleStatements:
     - Effect: Allow
       Action:
-        - dynamodb:DescribeTable
-        - dynamodb:Query
-        - dynamodb:Scan
+        - dynamodb:BatchGetItem
+        - dynamodb:DeleteItem
         - dynamodb:GetItem
         - dynamodb:PutItem
+        - dynamodb:Query
         - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/*"
 
 package:
@@ -69,10 +68,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: Username
             AttributeType: S
-        KeySchema:
+        KeySchema:  # GET /user, GET /profiles/:username
           - AttributeName: Username
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
 
     EmailUserTable:
       Type: AWS::DynamoDB::Table
@@ -81,7 +83,194 @@ resources:
         AttributeDefinitions:
           - AttributeName: Email
             AttributeType: S
-        KeySchema:
+        KeySchema:  # POST /users/login
           - AttributeName: Email
             KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    FollowTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-follow
+        AttributeDefinitions:
+          - AttributeName: Follower
+            AttributeType: S
+          - AttributeName: Publisher
+            AttributeType: S
+        KeySchema:  # GET /articles/feed
+          - AttributeName: Follower
+            KeyType: HASH
+          - AttributeName: Publisher
+            KeyType: RANGE
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    ArticleTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-article
+        AttributeDefinitions:
+          - AttributeName: ArticleId
+            AttributeType: N
+          - AttributeName: CreatedAt
+            AttributeType: N
+          - AttributeName: Dummy
+            AttributeType: N
+          - AttributeName: Author
+            AttributeType: S
+        KeySchema:  # GET /articles/:slug
+          - AttributeName: ArticleId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CreatedAt
+            KeySchema:  # GET /articles
+              - AttributeName: Dummy
+                KeyType: HASH
+              - AttributeName: CreatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 2
+          - IndexName: Author
+            KeySchema:  # GET /articles?author=:author
+              - AttributeName: Author
+                KeyType: HASH
+              - AttributeName: CreatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 2
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    ArticleTagTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-article-tag
+        AttributeDefinitions:
+          - AttributeName: Tag
+            AttributeType: S
+          - AttributeName: ArticleId
+            AttributeType: N
+          - AttributeName: CreatedAt
+            AttributeType: N
+        KeySchema:  # POST /articles, PUT /articles
+          - AttributeName: Tag
+            KeyType: HASH
+          - AttributeName: ArticleId
+            KeyType: RANGE
+        LocalSecondaryIndexes:
+          - IndexName: CreatedAt
+            KeySchema:  # GET /articles?tag=:tag
+              - AttributeName: Tag
+                KeyType: HASH
+              - AttributeName: CreatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    TagTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-tag
+        AttributeDefinitions:
+          - AttributeName: Tag
+            AttributeType: S
+          - AttributeName: ArticleCount
+            AttributeType: N
+          - AttributeName: Dummy
+            AttributeType: N
+        KeySchema:
+          - AttributeName: Tag
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ArticleCount
+            KeySchema:  # GET /tags
+              - AttributeName: Dummy
+                KeyType: HASH
+              - AttributeName: ArticleCount
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 2
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    FavoriteArticleTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-favorite-article
+        AttributeDefinitions:
+          - AttributeName: Username
+            AttributeType: S
+          - AttributeName: ArticleId
+            AttributeType: N
+          - AttributeName: FavoritedAt
+            AttributeType: N
+        KeySchema:  # POST /articles/:slug/favorite
+          - AttributeName: Username
+            KeyType: HASH
+          - AttributeName: ArticleId
+            KeyType: RANGE
+        LocalSecondaryIndexes:
+          - IndexName: FavoritedAt
+            KeySchema:  # GET /articles?favorited=:favorited
+              - AttributeName: Username
+                KeyType: HASH
+              - AttributeName: FavoritedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+    CommentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: realworld-${self:provider.environment.STAGE}-comment
+        AttributeDefinitions:
+          - AttributeName: CommentId
+            AttributeType: N
+          - AttributeName: ArticleId
+            AttributeType: N
+          - AttributeName: CreatedAt
+            AttributeType: N
+        KeySchema:  # POST /articles/:slug/comments
+          - AttributeName: ArticleId
+            KeyType: HASH
+          - AttributeName: CommentId
+            KeyType: RANGE
+        LocalSecondaryIndexes:
+          - IndexName: CreatedAt
+            KeySchema:  # GET /articles/:slug/comments
+              - AttributeName: ArticleId
+                KeyType: HASH
+              - AttributeName: CreatedAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PROVISIONED
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2

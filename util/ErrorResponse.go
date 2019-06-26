@@ -5,45 +5,48 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-type ErrorResponseBody struct {
-	Errors ErrorList `json:"errors"`
+type InputError map[string][]string
+
+func (e InputError) Error() string {
+	js, err := json.Marshal(e)
+	if err != nil {
+		return err.Error()
+	}
+
+	return string(js)
 }
 
-type ErrorList struct {
-	Body []string `json:"body"`
+func NewInputError(inputName, message string) InputError {
+	return InputError{
+		inputName: {message},
+	}
+}
+
+type ErrorResponseBody struct {
+	Errors InputError `json:"errors"`
 }
 
 func NewErrorResponse(err error) (events.APIGatewayProxyResponse, error) {
-	js, err := NewErrorResponseJSON(err.Error())
+	inputError, ok := err.(InputError)
+	if !ok {
+		// Internal server error
+		return events.APIGatewayProxyResponse{}, err
+	}
+
+	body := ErrorResponseBody{
+		Errors: inputError,
+	}
+
+	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return events.APIGatewayProxyResponse{}, err
 	}
 
 	response := events.APIGatewayProxyResponse{
 		StatusCode: 422,
-		Body:       js,
+		Body:       string(jsonBody),
 	}
 	return response, nil
-}
-
-func NewErrorResponseJSON(msg string) (string, error) {
-	body := NewErrorResponseBody(msg)
-	js, err := json.Marshal(body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(js), nil
-}
-
-func NewErrorResponseBody(msg string) ErrorResponseBody {
-	return ErrorResponseBody{
-		Errors: ErrorList{
-			Body: []string{
-				msg,
-			},
-		},
-	}
 }
 
 func NewUnauthorizedResponse() (events.APIGatewayProxyResponse, error) {
