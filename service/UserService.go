@@ -214,3 +214,55 @@ func GetCurrentUser(auth string) (*model.User, string, error) {
 
 	return &user, token, err
 }
+
+func GetArticleAuthors(articles []model.Article) ([]model.User, error) {
+	if len(articles) == 0 {
+		return make([]model.User, 0), nil
+	}
+
+	usernames := make(map[string]bool)
+	for _, article := range articles {
+		usernames[article.Author] = true
+	}
+
+	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(usernames))
+	for username := range usernames {
+		keys = append(keys, StringKey("Username", username))
+	}
+
+	batchGetUsers := dynamodb.BatchGetItemInput{
+		RequestItems: map[string]*dynamodb.KeysAndAttributes{
+			UserTableName.Get(): {
+				Keys: keys,
+			},
+		},
+	}
+
+	responses, err := BatchGetItems(&batchGetUsers, len(usernames))
+	if err != nil {
+		return nil, err
+	}
+
+	usersByUsername := make(map[string]model.User)
+
+	for _, response := range responses {
+		for _, items := range response {
+			for _, item := range items {
+				user := model.User{}
+				err = dynamodbattribute.UnmarshalMap(item, &user)
+				if err != nil {
+					return nil, err
+				}
+
+				usersByUsername[user.Username] = user
+			}
+		}
+	}
+
+	users := make([]model.User, 0, len(articles))
+	for _, article := range articles {
+		users = append(users, usersByUsername[article.Author])
+	}
+
+	return users, nil
+}

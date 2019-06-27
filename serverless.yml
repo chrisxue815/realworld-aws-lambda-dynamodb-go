@@ -59,6 +59,22 @@ functions:
           method: put
           cors: true
 
+  articles-post:
+    handler: bin/articles-post
+    events:
+      - http:
+          path: articles
+          method: post
+          cors: true
+
+  articles-get:
+    handler: bin/articles-get
+    events:
+      - http:
+          path: articles
+          method: get
+          cors: true
+
 resources:
   Resources:
     UserTable:
