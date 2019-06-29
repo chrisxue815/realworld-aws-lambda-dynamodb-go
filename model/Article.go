@@ -1,7 +1,7 @@
 package model
 
 const TimestampFormat = "2006-01-02T15:04:05.000Z"
-const MaxArticleId = 0x1000000
+const MaxArticleId = 0x1000000 // exclusive
 
 type Article struct {
 	ArticleId      int64

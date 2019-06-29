@@ -7,7 +7,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
-func IsFollowing(user *model.User, articles []model.Article) ([]bool, error) {
+func IsFollowingArticleAuthor(user *model.User, articles []model.Article) ([]bool, error) {
 	if user == nil || len(articles) == 0 {
 		return make([]bool, len(articles)), nil
 	}

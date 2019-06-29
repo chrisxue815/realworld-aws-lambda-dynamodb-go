@@ -187,7 +187,7 @@ func GetUserByEmail(email string) (model.User, error) {
 
 func GetUsernameByEmail(email string) (string, error) {
 	emailUser := model.EmailUser{}
-	err := GetItemByKey(EmailUserTableName.Get(), "Email", email, &emailUser)
+	err := GetItemByKey(EmailUserTableName.Get(), StringKey("Email", email), &emailUser)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +197,7 @@ func GetUsernameByEmail(email string) (string, error) {
 
 func GetUserByUsername(username string) (model.User, error) {
 	user := model.User{}
-	err := GetItemByKey(UserTableName.Get(), "Username", username, &user)
+	err := GetItemByKey(UserTableName.Get(), StringKey("Username", username), &user)
 	return user, err
 }
 

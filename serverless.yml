@@ -75,6 +75,18 @@ functions:
           method: get
           cors: true
 
+  articles-slug-get:
+    handler: bin/articles-slug-get
+    events:
+      - http:
+          path: articles/{slug}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
 resources:
   Resources:
     UserTable:

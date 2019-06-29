@@ -11,6 +11,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"github.com/gosimple/slug"
 	"strconv"
+	"strings"
 )
 
 func PutArticle(article *model.Article) error {
@@ -44,7 +45,7 @@ func PutArticle(article *model.Article) error {
 }
 
 func putArticleWithRandomId(article *model.Article, slugPrefix string) error {
-	article.ArticleId = ArticleIdRand().Int63n(model.MaxArticleId)
+	article.ArticleId = 1 + ArticleIdRand().Int63n(model.MaxArticleId-1) // range: [1, MaxArticleId)
 	article.Slug = slugPrefix + "-" + strconv.FormatInt(article.ArticleId, 16)
 
 	articleItem, err := dynamodbattribute.MarshalMap(article)
@@ -204,24 +205,28 @@ func getArticlesByAuthor(author string, offset, limit int) ([]model.Article, err
 }
 
 func getArticlesByTag(tag string, offset, limit int) ([]model.Article, error) {
-	articleIdItems, err := GetArticleIdsByTag(tag, offset, limit)
+	articleIds, err := GetArticleIdsByTag(tag, offset, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return getArticlesByArticleIdItems(articleIdItems, limit)
+	return getArticlesByArticleIds(articleIds, limit)
 }
 
 func getFavoriteArticlesByUsername(username string, offset, limit int) ([]model.Article, error) {
-	articleIdItems, err := GetFavoriteArticleIdsByUsername(username, offset, limit)
+	articleIds, err := GetFavoriteArticleIdsByUsername(username, offset, limit)
 	if err != nil {
 		return nil, err
 	}
 
-	return getArticlesByArticleIdItems(articleIdItems, limit)
+	return getArticlesByArticleIds(articleIds, limit)
 }
 
-func getArticlesByArticleIdItems(articleIds []int64, limit int) ([]model.Article, error) {
+func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, error) {
+	if len(articleIds) == 0 {
+		return make([]model.Article, 0), nil
+	}
+
 	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(articleIds))
 	for _, articleId := range articleIds {
 		keys = append(keys, Int64Key("ArticleId", articleId))
@@ -259,4 +264,43 @@ func getArticlesByArticleIdItems(articleIds []int64, limit int) ([]model.Article
 	}
 
 	return articles, nil
+}
+
+func GetArticleRelatedProperties(user *model.User, articles []model.Article) ([]bool, []model.User, []bool, error) {
+	isFavorited, err := IsArticleFavoritedByUser(user, articles)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	authors, err := GetArticleAuthors(articles)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	following, err := IsFollowingArticleAuthor(user, articles)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return isFavorited, authors, following, nil
+}
+
+func GetArticleBySlug(slug string) (model.Article, error) {
+	dashIndex := strings.LastIndexByte(slug, '-')
+	if dashIndex == -1 {
+		return model.Article{}, util.NewInputError("slug", "invalid")
+	}
+
+	articleId, err := strconv.ParseInt(slug[dashIndex+1:], 16, 64)
+	if err != nil {
+		return model.Article{}, util.NewInputError("slug", "invalid")
+	}
+
+	article := model.Article{}
+	err = GetItemByKey(ArticleTableName.Get(), Int64Key("ArticleId", articleId), &article)
+	if err != nil {
+		return model.Article{}, err
+	}
+
+	return article, nil
 }

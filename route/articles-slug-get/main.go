@@ -6,13 +6,11 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/service"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
-	"strconv"
 	"time"
 )
 
 type ResponseBody struct {
-	Articles      []ArticleResponse `json:"articles"`
-	ArticlesCount int               `json:"articlesCount"`
+	Article ArticleResponse `json:"article"`
 }
 
 type ArticleResponse struct {
@@ -38,34 +36,22 @@ type AuthorResponse struct {
 func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user, _, _ := service.GetCurrentUser(request.Headers["Authorization"])
 
-	offset, err := strconv.Atoi(request.QueryStringParameters["offset"])
-	if err != nil {
-		offset = 0
-	}
-
-	limit, err := strconv.Atoi(request.QueryStringParameters["limit"])
-	if err != nil {
-		limit = 20
-	}
-
-	author := request.QueryStringParameters["author"]
-	tag := request.QueryStringParameters["tag"]
-	favorited := request.QueryStringParameters["favorited"]
-
-	articles, err := service.GetArticles(offset, limit, author, tag, favorited)
+	article, err := service.GetArticleBySlug(request.PathParameters["slug"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, articles)
+	if article.ArticleId == 0 {
+		return util.NewErrorResponse(util.NewInputError("slug", "not found"))
+	}
+
+	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, []model.Article{article})
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	articlesResponse := make([]ArticleResponse, 0, len(articles))
-
-	for i, article := range articles {
-		articlesResponse = append(articlesResponse, ArticleResponse{
+	responseBody := ResponseBody{
+		Article: ArticleResponse{
 			Slug:           article.Slug,
 			Title:          article.Title,
 			Description:    article.Description,
@@ -73,20 +59,15 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 			TagList:        article.TagList,
 			CreatedAt:      time.Unix(0, article.CreatedAt).Format(model.TimestampFormat),
 			UpdatedAt:      time.Unix(0, article.UpdatedAt).Format(model.TimestampFormat),
-			Favorited:      isFavorited[i],
+			Favorited:      isFavorited[0],
 			FavoritesCount: article.FavoritesCount,
 			Author: AuthorResponse{
-				Username:  authors[i].Username,
-				Bio:       authors[i].Bio,
-				Image:     authors[i].Image,
-				Following: following[i],
+				Username:  authors[0].Username,
+				Bio:       authors[0].Bio,
+				Image:     authors[0].Image,
+				Following: following[0],
 			},
-		})
-	}
-
-	responseBody := ResponseBody{
-		Articles:      articlesResponse,
-		ArticlesCount: len(articlesResponse),
+		},
 	}
 
 	return util.NewSuccessResponse(200, responseBody)

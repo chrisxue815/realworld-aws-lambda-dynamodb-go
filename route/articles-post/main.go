@@ -26,19 +26,19 @@ type ResponseBody struct {
 }
 
 type ArticleResponse struct {
-	Slug           string   `json:"slug"`
-	Title          string   `json:"title"`
-	Description    string   `json:"description"`
-	Body           string   `json:"body"`
-	TagList        []string `json:"tagList"`
-	CreatedAt      string   `json:"createdAt"`
-	UpdatedAt      string   `json:"UpdatedAt"`
-	Favorited      bool     `json:"favorited"`
-	FavoritesCount int64    `json:"favoritesCount"`
-	Author         Author   `json:"author"`
+	Slug           string         `json:"slug"`
+	Title          string         `json:"title"`
+	Description    string         `json:"description"`
+	Body           string         `json:"body"`
+	TagList        []string       `json:"tagList"`
+	CreatedAt      string         `json:"createdAt"`
+	UpdatedAt      string         `json:"UpdatedAt"`
+	Favorited      bool           `json:"favorited"`
+	FavoritesCount int64          `json:"favoritesCount"`
+	Author         AuthorResponse `json:"author"`
 }
 
-type Author struct {
+type AuthorResponse struct {
 	Username  string `json:"username"`
 	Bio       string `json:"bio"`
 	Image     string `json:"image"`
@@ -87,7 +87,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 			UpdatedAt:      nowStr,
 			Favorited:      false,
 			FavoritesCount: 0,
-			Author: Author{
+			Author: AuthorResponse{
 				Username:  user.Username,
 				Bio:       user.Bio,
 				Image:     user.Image,

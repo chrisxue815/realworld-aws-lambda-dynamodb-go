@@ -7,14 +7,10 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-func GetItemByKey(tableName string, keyName string, keyValue string, out interface{}) error {
+func GetItemByKey(tableName string, key map[string]*dynamodb.AttributeValue, out interface{}) error {
 	input := dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
-		Key: map[string]*dynamodb.AttributeValue{
-			keyName: {
-				S: aws.String(keyValue),
-			},
-		},
+		Key:       key,
 	}
 
 	output, err := DynamoDB().GetItem(&input)
