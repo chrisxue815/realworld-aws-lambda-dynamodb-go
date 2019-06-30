@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/scrypt"
@@ -9,25 +10,24 @@ import (
 	"time"
 )
 
-const tokenExpirationDay = 60
-const passwordKeyLength = 64
+const TokenExpirationDay = 60
 
 var passwordSalt = []byte("KU2YVXA7BSNExJIvemcdz61eL86IJDCC")
 var jwtSecret = []byte("C92cw5od80NCWIvu4NZ8AKp5NyTbnBmG")
 
 func Scrypt(password string) ([]byte, error) {
 	// https://godoc.org/golang.org/x/crypto/scrypt
-	key, err := scrypt.Key([]byte(password), passwordSalt, 32768, 8, 1, passwordKeyLength)
+	passwordHash, err := scrypt.Key([]byte(password), passwordSalt, 32768, 8, 1, model.PasswordKeyLength)
 	if err != nil {
 		return nil, err
 	}
 
-	return key, nil
+	return passwordHash, nil
 }
 
 func GenerateToken(username string) (string, error) {
 	now := time.Now().UTC()
-	exp := now.AddDate(0, 0, tokenExpirationDay).Unix()
+	exp := now.AddDate(0, 0, TokenExpirationDay).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": username,

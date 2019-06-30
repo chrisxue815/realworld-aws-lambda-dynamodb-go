@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
@@ -41,25 +40,22 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	var password []byte
-	if requestBody.User.Password != "" {
-		const minPasswordLength = 0
-		if len(requestBody.User.Password) < minPasswordLength {
-			return util.NewErrorResponse(util.NewInputError("password", fmt.Sprintf("must be at least %d characters in length", minPasswordLength)))
-		}
+	err = model.ValidatePassword(requestBody.User.Password)
+	if err != nil {
+		return util.NewErrorResponse(err)
+	}
 
-		password, err = service.Scrypt(requestBody.User.Password)
-		if err != nil {
-			return util.NewErrorResponse(err)
-		}
+	passwordHash, err := service.Scrypt(requestBody.User.Password)
+	if err != nil {
+		return util.NewErrorResponse(err)
 	}
 
 	newUser := model.User{
-		Username: oldUser.Username,
-		Email:    requestBody.User.Email,
-		Password: password,
-		Image:    requestBody.User.Image,
-		Bio:      requestBody.User.Bio,
+		Username:     oldUser.Username,
+		Email:        requestBody.User.Email,
+		PasswordHash: passwordHash,
+		Image:        requestBody.User.Image,
+		Bio:          requestBody.User.Bio,
 	}
 
 	err = service.UpdateUser(*oldUser, newUser)

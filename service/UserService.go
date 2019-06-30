@@ -11,8 +11,9 @@ import (
 )
 
 func PutUser(user model.User) error {
-	if user.Email == "" {
-		return util.NewInputError("email", "must not be empty")
+	err := user.Validate()
+	if err != nil {
+		return err
 	}
 
 	userItem, err := dynamodbattribute.MarshalMap(user)
@@ -61,8 +62,9 @@ func PutUser(user model.User) error {
 }
 
 func UpdateUser(oldUser model.User, newUser model.User) error {
-	if newUser.Email == "" {
-		return util.NewInputError("email", "must not be empty")
+	err := newUser.Validate()
+	if err != nil {
+		return err
 	}
 
 	emailUser := model.EmailUser{
@@ -140,8 +142,8 @@ func buildUpdateExpression(oldUser model.User, newUser model.User) (expression.E
 		update = update.Set(expression.Name("Email"), expression.Value(newUser.Email))
 	}
 
-	if newUser.Password != nil && !bytes.Equal(oldUser.Password, newUser.Password) {
-		update = update.Set(expression.Name("Password"), expression.Value(newUser.Password))
+	if newUser.PasswordHash != nil && !bytes.Equal(oldUser.PasswordHash, newUser.PasswordHash) {
+		update = update.Set(expression.Name("PasswordHash"), expression.Value(newUser.PasswordHash))
 	}
 
 	if oldUser.Image != newUser.Image {

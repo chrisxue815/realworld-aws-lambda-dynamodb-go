@@ -38,12 +38,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	password, err := service.Scrypt(requestBody.User.Password)
+	passwordHash, err := service.Scrypt(requestBody.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	if !bytes.Equal(password, user.Password) {
+	if !bytes.Equal(passwordHash, user.PasswordHash) {
 		return util.NewErrorResponse(util.NewInputError("password", "wrong password"))
 	}
 

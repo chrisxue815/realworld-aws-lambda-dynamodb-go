@@ -34,15 +34,20 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	password, err := service.Scrypt(requestBody.User.Password)
+	err = model.ValidatePassword(requestBody.User.Password)
+	if err != nil {
+		return util.NewErrorResponse(err)
+	}
+
+	passwordHash, err := service.Scrypt(requestBody.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
 	user := model.User{
-		Username: requestBody.User.Username,
-		Email:    requestBody.User.Email,
-		Password: password,
+		Username:     requestBody.User.Username,
+		Email:        requestBody.User.Email,
+		PasswordHash: passwordHash,
 	}
 
 	err = service.PutUser(user)
