@@ -8,8 +8,10 @@ import (
 	"strconv"
 )
 
-func StringKey(name, value string) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
+type AWSObject = map[string]*dynamodb.AttributeValue
+
+func StringKey(name, value string) AWSObject {
+	return AWSObject{
 		name: StringValue(value),
 	}
 }
@@ -20,8 +22,8 @@ func StringValue(value string) *dynamodb.AttributeValue {
 	}
 }
 
-func IntKey(name string, value int) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
+func IntKey(name string, value int) AWSObject {
+	return AWSObject{
 		name: IntValue(value),
 	}
 }
@@ -32,8 +34,8 @@ func IntValue(value int) *dynamodb.AttributeValue {
 	}
 }
 
-func Int64Key(name string, value int64) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
+func Int64Key(name string, value int64) AWSObject {
+	return AWSObject{
 		name: Int64Value(value),
 	}
 }

@@ -28,15 +28,15 @@ type Follow struct {
 
 func (u *User) Validate() error {
 	if u.Username == "" {
-		return util.NewInputError("username", "must not be empty")
+		return util.NewInputError("username", "can't be blank")
 	}
 
 	if u.Email == "" {
-		return util.NewInputError("email", "must not be empty")
+		return util.NewInputError("email", "can't be blank")
 	}
 
 	if u.PasswordHash == nil || len(u.PasswordHash) != PasswordKeyLength {
-		return util.NewInputError("password", "must not be empty")
+		return util.NewInputError("password", "can't be blank")
 	}
 
 	return nil

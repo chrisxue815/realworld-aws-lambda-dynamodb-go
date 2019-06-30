@@ -17,9 +17,9 @@ func IsFollowingArticleAuthor(user *model.User, articles []model.Article) ([]boo
 		authors[article.Author] = true
 	}
 
-	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(authors))
+	keys := make([]AWSObject, 0, len(authors))
 	for author := range authors {
-		keys = append(keys, map[string]*dynamodb.AttributeValue{
+		keys = append(keys, AWSObject{
 			"Follower":  StringValue(user.Username),
 			"Publisher": StringValue(author),
 		})

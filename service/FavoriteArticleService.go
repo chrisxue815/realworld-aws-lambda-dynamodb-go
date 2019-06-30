@@ -9,17 +9,13 @@ import (
 
 func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int64, error) {
 	queryArticleIds := dynamodb.QueryInput{
-		TableName: aws.String(FavoriteArticleTableName.Get()),
-		IndexName: aws.String("FavoritedAt"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":username": {
-				S: aws.String(username),
-			},
-		},
-		KeyConditionExpression: aws.String("Username=:username"),
-		Limit:                  aws.Int64(int64(offset + limit)),
-		ScanIndexForward:       aws.Bool(false),
-		ProjectionExpression:   aws.String("ArticleId"),
+		TableName:                 aws.String(FavoriteArticleTableName.Get()),
+		IndexName:                 aws.String("FavoritedAt"),
+		KeyConditionExpression:    aws.String("Username=:username"),
+		ExpressionAttributeValues: StringKey(":username", username),
+		Limit:                     aws.Int64(int64(offset + limit)),
+		ScanIndexForward:          aws.Bool(false),
+		ProjectionExpression:      aws.String("ArticleId"),
 	}
 
 	items, err := QueryItems(&queryArticleIds, offset, limit)
@@ -47,9 +43,9 @@ func IsArticleFavoritedByUser(user *model.User, articles []model.Article) ([]boo
 		return make([]bool, len(articles)), nil
 	}
 
-	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(articles))
+	keys := make([]AWSObject, 0, len(articles))
 	for _, article := range articles {
-		keys = append(keys, map[string]*dynamodb.AttributeValue{
+		keys = append(keys, AWSObject{
 			"Username":  StringValue(user.Username),
 			"ArticleId": Int64Value(article.ArticleId),
 		})

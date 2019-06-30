@@ -7,7 +7,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-func GetItemByKey(tableName string, key map[string]*dynamodb.AttributeValue, out interface{}) error {
+func GetItemByKey(tableName string, key AWSObject, out interface{}) error {
 	input := dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key:       key,
@@ -26,8 +26,8 @@ func GetItemByKey(tableName string, key map[string]*dynamodb.AttributeValue, out
 	return nil
 }
 
-func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]map[string]*dynamodb.AttributeValue, error) {
-	items := make([]map[string]*dynamodb.AttributeValue, 0, cap)
+func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]AWSObject, error) {
+	items := make([]AWSObject, 0, cap)
 	resultIndex := 0
 
 	err := DynamoDB().QueryPages(queryInput, func(page *dynamodb.QueryOutput, lastPage bool) bool {
@@ -51,8 +51,8 @@ func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]map[string]
 	return items, nil
 }
 
-func BatchGetItems(batchGetInput *dynamodb.BatchGetItemInput, cap int) ([]map[string][]map[string]*dynamodb.AttributeValue, error) {
-	responses := make([]map[string][]map[string]*dynamodb.AttributeValue, 0, cap)
+func BatchGetItems(batchGetInput *dynamodb.BatchGetItemInput, cap int) ([]map[string][]AWSObject, error) {
+	responses := make([]map[string][]AWSObject, 0, cap)
 
 	err := DynamoDB().BatchGetItemPages(batchGetInput, func(page *dynamodb.BatchGetItemOutput, lastPage bool) bool {
 		responses = append(responses, page.Responses)

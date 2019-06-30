@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
-	"github.com/gosimple/slug"
 	"strconv"
 	"strings"
 )
@@ -20,13 +19,11 @@ func PutArticle(article *model.Article) error {
 		return err
 	}
 
-	slugPrefix := slug.Make(article.Title)
-
 	const maxAttempt = 5
 
 	// Try to find a unique article id
 	for attempt := 0; ; attempt++ {
-		err := putArticleWithRandomId(article, slugPrefix)
+		err := putArticleWithRandomId(article)
 
 		if err == nil {
 			return nil
@@ -45,9 +42,9 @@ func PutArticle(article *model.Article) error {
 	}
 }
 
-func putArticleWithRandomId(article *model.Article, slugPrefix string) error {
+func putArticleWithRandomId(article *model.Article) error {
 	article.ArticleId = 1 + ArticleIdRand().Int63n(model.MaxArticleId-1) // range: [1, MaxArticleId)
-	article.Slug = slugPrefix + "-" + strconv.FormatInt(article.ArticleId, 16)
+	article.MakeSlug()
 
 	articleItem, err := dynamodbattribute.MarshalMap(article)
 	if err != nil {
@@ -181,14 +178,12 @@ func getAllArticles(offset, limit int) ([]model.Article, error) {
 
 func getArticlesByAuthor(author string, offset, limit int) ([]model.Article, error) {
 	queryArticles := dynamodb.QueryInput{
-		TableName: aws.String(ArticleTableName.Get()),
-		IndexName: aws.String("Author"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":author": StringValue(author),
-		},
-		KeyConditionExpression: aws.String("Author=:author"),
-		Limit:                  aws.Int64(int64(offset + limit)),
-		ScanIndexForward:       aws.Bool(false),
+		TableName:                 aws.String(ArticleTableName.Get()),
+		IndexName:                 aws.String("Author"),
+		KeyConditionExpression:    aws.String("Author=:author"),
+		ExpressionAttributeValues: StringKey(":author", author),
+		Limit:                     aws.Int64(int64(offset + limit)),
+		ScanIndexForward:          aws.Bool(false),
 	}
 
 	items, err := QueryItems(&queryArticles, offset, limit)
@@ -228,7 +223,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 		return make([]model.Article, 0), nil
 	}
 
-	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(articleIds))
+	keys := make([]AWSObject, 0, len(articleIds))
 	for _, articleId := range articleIds {
 		keys = append(keys, Int64Key("ArticleId", articleId))
 	}

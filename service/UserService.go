@@ -92,16 +92,14 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		// Unlink user with the old email
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Delete: &dynamodb.Delete{
-				TableName: aws.String(EmailUserTableName.Get()),
-				Key: map[string]*dynamodb.AttributeValue{
-					"Email": StringValue(oldUser.Email),
-				},
+				TableName:           aws.String(EmailUserTableName.Get()),
+				Key:                 StringKey("Email", oldUser.Email),
 				ConditionExpression: aws.String("attribute_exists(Email)"),
 			},
 		})
 	}
 
-	expr, err := buildUpdateExpression(oldUser, newUser)
+	expr, err := buildUserUpdateExpression(oldUser, newUser)
 	if err != nil {
 		return err
 	}
@@ -114,10 +112,8 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 	// Update user info
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName: aws.String(UserTableName.Get()),
-			Key: map[string]*dynamodb.AttributeValue{
-				"Username": StringValue(oldUser.Username),
-			},
+			TableName:                 aws.String(UserTableName.Get()),
+			Key:                       StringKey("Username", oldUser.Username),
 			ConditionExpression:       aws.String("attribute_exists(Username)"),
 			UpdateExpression:          expr.Update(),
 			ExpressionAttributeNames:  expr.Names(),
@@ -135,7 +131,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 	return nil
 }
 
-func buildUpdateExpression(oldUser model.User, newUser model.User) (expression.Expression, error) {
+func buildUserUpdateExpression(oldUser model.User, newUser model.User) (expression.Expression, error) {
 	update := expression.UpdateBuilder{}
 
 	if oldUser.Email != newUser.Email {
@@ -172,7 +168,7 @@ func buildUpdateExpression(oldUser model.User, newUser model.User) (expression.E
 
 func GetUserByEmail(email string) (model.User, error) {
 	if email == "" {
-		return model.User{}, util.NewInputError("email", "must not be empty")
+		return model.User{}, util.NewInputError("email", "can't be blank")
 	}
 
 	username, err := GetUsernameByEmail(email)
@@ -227,7 +223,7 @@ func GetArticleAuthors(articles []model.Article) ([]model.User, error) {
 		usernames[article.Author] = true
 	}
 
-	keys := make([]map[string]*dynamodb.AttributeValue, 0, len(usernames))
+	keys := make([]AWSObject, 0, len(usernames))
 	for username := range usernames {
 		keys = append(keys, StringKey("Username", username))
 	}
