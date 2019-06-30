@@ -15,8 +15,9 @@ import (
 )
 
 func PutArticle(article *model.Article) error {
-	if len(article.TagList) > 5 {
-		return util.NewInputError("tagList", "cannot add more than 5 tags per article")
+	err := article.Validate()
+	if err != nil {
+		return err
 	}
 
 	slugPrefix := slug.Make(article.Title)
