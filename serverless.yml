@@ -87,6 +87,18 @@ functions:
               paths:
                 slug: true
 
+  articles-slug-put:
+    handler: bin/articles-slug-put
+    events:
+      - http:
+          path: articles/{slug}
+          method: put
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
 resources:
   Resources:
     UserTable:

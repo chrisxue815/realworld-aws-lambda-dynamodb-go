@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"strconv"
@@ -299,4 +300,79 @@ func GetArticleBySlug(slug string) (model.Article, error) {
 	}
 
 	return article, nil
+}
+
+func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
+	err := newArticle.Validate()
+	if err != nil {
+		return err
+	}
+
+	newArticle.MakeSlug()
+
+	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*model.MaxNumTagsPerArticle)
+
+	expr, err := buildArticleUpdateExpression(oldArticle, *newArticle)
+	if err != nil {
+		return err
+	}
+
+	// No field changed
+	if expr.Update() == nil {
+		return nil
+	}
+
+	// Update user info
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Update: &dynamodb.Update{
+			TableName:                 aws.String(ArticleTableName.Get()),
+			Key:                       Int64Key("ArticleId", oldArticle.ArticleId),
+			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
+			UpdateExpression:          expr.Update(),
+			ExpressionAttributeNames:  expr.Names(),
+			ExpressionAttributeValues: expr.Values(),
+		},
+	})
+
+	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+		TransactItems: transactItems,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func buildArticleUpdateExpression(oldUser model.Article, newUser model.Article) (expression.Expression, error) {
+	update := expression.UpdateBuilder{}
+
+	if oldUser.Slug != newUser.Slug {
+		update = update.Set(expression.Name("Slug"), expression.Value(newUser.Slug))
+	}
+
+	if oldUser.Title != newUser.Title {
+		update = update.Set(expression.Name("Title"), expression.Value(newUser.Title))
+	}
+
+	if oldUser.Description != newUser.Description {
+		update = update.Set(expression.Name("Description"), expression.Value(newUser.Description))
+	}
+
+	if oldUser.Body != newUser.Body {
+		update = update.Set(expression.Name("Body"), expression.Value(newUser.Body))
+	}
+
+	//TODO: TagList
+
+	if oldUser.UpdatedAt != newUser.UpdatedAt {
+		update = update.Set(expression.Name("UpdatedAt"), expression.Value(newUser.UpdatedAt))
+	}
+
+	if IsUpdateBuilderEmpty(update) {
+		return expression.Expression{}, nil
+	}
+
+	builder := expression.NewBuilder().WithUpdate(update)
+	return builder.Build()
 }
