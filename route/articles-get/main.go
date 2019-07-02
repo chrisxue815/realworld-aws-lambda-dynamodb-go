@@ -22,7 +22,7 @@ type ArticleResponse struct {
 	Body           string         `json:"body"`
 	TagList        []string       `json:"tagList"`
 	CreatedAt      string         `json:"createdAt"`
-	UpdatedAt      string         `json:"UpdatedAt"`
+	UpdatedAt      string         `json:"updatedAt"`
 	Favorited      bool           `json:"favorited"`
 	FavoritesCount int64          `json:"favoritesCount"`
 	Author         AuthorResponse `json:"author"`
