@@ -89,7 +89,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 			},
 		})
 
-		// Unlink user with the old email
+		// Unlink user from the old email
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Delete: &dynamodb.Delete{
 				TableName:           aws.String(EmailUserTableName.Get()),

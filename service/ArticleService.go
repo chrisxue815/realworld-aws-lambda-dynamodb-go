@@ -312,7 +312,12 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 
 	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*model.MaxNumTagsPerArticle)
 
-	expr, err := buildArticleUpdateExpression(oldArticle, *newArticle)
+	oldTagSet := util.NewStringSetFromSlice(oldArticle.TagList)
+	newTagSet := util.NewStringSetFromSlice(newArticle.TagList)
+	oldTags := oldTagSet.Difference(newTagSet)
+	newTags := newTagSet.Difference(oldTagSet)
+
+	expr, err := buildArticleUpdateExpression(oldArticle, *newArticle, len(oldTags) != 0 || len(newTags) != 0)
 	if err != nil {
 		return err
 	}
@@ -322,7 +327,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		return nil
 	}
 
-	// Update user info
+	// Update article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
 			TableName:                 aws.String(ArticleTableName.Get()),
@@ -334,6 +339,60 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		},
 	})
 
+	for tag := range oldTags {
+		// Unlink article from tag
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Delete: &dynamodb.Delete{
+				TableName: aws.String(ArticleTagTableName.Get()),
+				Key: AWSObject{
+					"Tag":       StringValue(tag),
+					"ArticleId": Int64Value(oldArticle.ArticleId),
+				},
+			},
+		})
+
+		// Update article count for each tag
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Update: &dynamodb.Update{
+				TableName:                 aws.String(TagTableName.Get()),
+				Key:                       StringKey("Tag", tag),
+				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
+				ExpressionAttributeValues: IntKey(":minus_one", -1),
+			},
+		})
+	}
+
+	for tag := range newTags {
+		articleTag := model.ArticleTag{
+			Tag:       tag,
+			ArticleId: oldArticle.ArticleId,
+			CreatedAt: oldArticle.CreatedAt,
+		}
+
+		item, err := dynamodbattribute.MarshalMap(articleTag)
+		if err != nil {
+			return err
+		}
+
+		// Link article with tag
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Put: &dynamodb.Put{
+				TableName: aws.String(ArticleTagTableName.Get()),
+				Item:      item,
+			},
+		})
+
+		// Update article count for each tag
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Update: &dynamodb.Update{
+				TableName:                 aws.String(TagTableName.Get()),
+				Key:                       StringKey("Tag", tag),
+				UpdateExpression:          aws.String("ADD ArticleCount :one"),
+				ExpressionAttributeValues: IntKey(":one", 1),
+			},
+		})
+	}
+
 	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
@@ -344,29 +403,31 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 	return nil
 }
 
-func buildArticleUpdateExpression(oldUser model.Article, newUser model.Article) (expression.Expression, error) {
+func buildArticleUpdateExpression(oldArticle model.Article, newArticle model.Article, updateTagList bool) (expression.Expression, error) {
 	update := expression.UpdateBuilder{}
 
-	if oldUser.Slug != newUser.Slug {
-		update = update.Set(expression.Name("Slug"), expression.Value(newUser.Slug))
+	if oldArticle.Slug != newArticle.Slug {
+		update = update.Set(expression.Name("Slug"), expression.Value(newArticle.Slug))
 	}
 
-	if oldUser.Title != newUser.Title {
-		update = update.Set(expression.Name("Title"), expression.Value(newUser.Title))
+	if oldArticle.Title != newArticle.Title {
+		update = update.Set(expression.Name("Title"), expression.Value(newArticle.Title))
 	}
 
-	if oldUser.Description != newUser.Description {
-		update = update.Set(expression.Name("Description"), expression.Value(newUser.Description))
+	if oldArticle.Description != newArticle.Description {
+		update = update.Set(expression.Name("Description"), expression.Value(newArticle.Description))
 	}
 
-	if oldUser.Body != newUser.Body {
-		update = update.Set(expression.Name("Body"), expression.Value(newUser.Body))
+	if oldArticle.Body != newArticle.Body {
+		update = update.Set(expression.Name("Body"), expression.Value(newArticle.Body))
 	}
 
-	//TODO: TagList
+	if updateTagList {
+		update = update.Set(expression.Name("TagList"), expression.Value(newArticle.TagList))
+	}
 
-	if oldUser.UpdatedAt != newUser.UpdatedAt {
-		update = update.Set(expression.Name("UpdatedAt"), expression.Value(newUser.UpdatedAt))
+	if oldArticle.UpdatedAt != newArticle.UpdatedAt {
+		update = update.Set(expression.Name("UpdatedAt"), expression.Value(newArticle.UpdatedAt))
 	}
 
 	if IsUpdateBuilderEmpty(update) {
