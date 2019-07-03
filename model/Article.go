@@ -5,6 +5,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"github.com/gosimple/slug"
 	"strconv"
+	"strings"
 )
 
 const TimestampFormat = "2006-01-02T15:04:05.000Z"
@@ -62,4 +63,15 @@ func (article *Article) Validate() error {
 func (article *Article) MakeSlug() {
 	slugPrefix := slug.Make(article.Title)
 	article.Slug = slugPrefix + "-" + strconv.FormatInt(article.ArticleId, 16)
+}
+
+func SlugToArticleId(slug string) (int64, error) {
+	dashIndex := strings.LastIndexByte(slug, '-')
+
+	articleId, err := strconv.ParseInt(slug[dashIndex+1:], 16, 64)
+	if err != nil {
+		return 0, util.NewInputError("slug", "invalid")
+	}
+
+	return articleId, nil
 }

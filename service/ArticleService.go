@@ -10,8 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
-	"strconv"
-	"strings"
 )
 
 func PutArticle(article *model.Article) error {
@@ -283,14 +281,9 @@ func GetArticleRelatedProperties(user *model.User, articles []model.Article) ([]
 }
 
 func GetArticleBySlug(slug string) (model.Article, error) {
-	dashIndex := strings.LastIndexByte(slug, '-')
-	if dashIndex == -1 {
-		return model.Article{}, util.NewInputError("slug", "invalid")
-	}
-
-	articleId, err := strconv.ParseInt(slug[dashIndex+1:], 16, 64)
+	articleId, err := model.SlugToArticleId(slug)
 	if err != nil {
-		return model.Article{}, util.NewInputError("slug", "invalid")
+		return model.Article{}, err
 	}
 
 	article := model.Article{}
@@ -310,12 +303,12 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 
 	newArticle.MakeSlug()
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*model.MaxNumTagsPerArticle)
-
 	oldTagSet := util.NewStringSetFromSlice(oldArticle.TagList)
 	newTagSet := util.NewStringSetFromSlice(newArticle.TagList)
 	oldTags := oldTagSet.Difference(newTagSet)
 	newTags := newTagSet.Difference(oldTagSet)
+
+	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*len(oldTags)+2*len(newTags))
 
 	expr, err := buildArticleUpdateExpression(oldArticle, *newArticle, len(oldTags) != 0 || len(newTags) != 0)
 	if err != nil {
@@ -374,7 +367,12 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 			return err
 		}
 
-		// Link article with tag
+		// Link article with tag.
+		// Ignored benign race condition:
+		//   Current tag list: A B C
+		//   Request 1:        A B      (Delete C)
+		//   Request 2:        A B C D  (Add    D)
+		//   There's a small chance for both requests to get through, leading to inconsistent result A B D
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Put: &dynamodb.Put{
 				TableName: aws.String(ArticleTagTableName.Get()),
