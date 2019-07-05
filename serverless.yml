@@ -99,6 +99,18 @@ functions:
               paths:
                 slug: true
 
+  articles-slug-delete:
+    handler: bin/articles-slug-delete
+    events:
+      - http:
+          path: articles/{slug}
+          method: delete
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
 resources:
   Resources:
     UserTable:

@@ -435,3 +435,56 @@ func buildArticleUpdateExpression(oldArticle model.Article, newArticle model.Art
 	builder := expression.NewBuilder().WithUpdate(update)
 	return builder.Build()
 }
+
+func DeleteArticle(slug string, username string) error {
+	article, err := GetArticleBySlug(slug)
+	if err != nil {
+		return err
+	}
+
+	transactItems := make([]*dynamodb.TransactWriteItem, 0, 3+2*len(article.TagList))
+
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Delete: &dynamodb.Delete{
+			TableName:                 aws.String(ArticleTableName.Get()),
+			Key:                       Int64Key("ArticleId", article.ArticleId),
+			ConditionExpression:       aws.String("Author=:username"),
+			ExpressionAttributeValues: StringKey(":username", username),
+		},
+	})
+
+	// TODO:
+	// DynamoDB doesn't support deleting a whole partition by specifying just the partition key.
+	// It's probably easier to delete related items in FavoriteArticleTable and CommentTable
+	// offline (despite potential article id overwrite).
+
+	for _, tag := range article.TagList {
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Delete: &dynamodb.Delete{
+				TableName: aws.String(ArticleTagTableName.Get()),
+				Key: AWSObject{
+					"Tag":       StringValue(tag),
+					"ArticleId": Int64Value(article.ArticleId),
+				},
+			},
+		})
+
+		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+			Update: &dynamodb.Update{
+				TableName:                 aws.String(TagTableName.Get()),
+				Key:                       StringKey("Tag", tag),
+				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
+				ExpressionAttributeValues: IntKey(":minus_one", -1),
+			},
+		})
+	}
+
+	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+		TransactItems: transactItems,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
