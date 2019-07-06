@@ -84,10 +84,13 @@ func putArticleWithRandomId(article *model.Article) error {
 		// Update article count for each tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:                 aws.String(TagTableName.Get()),
-				Key:                       StringKey("Tag", tag),
-				UpdateExpression:          aws.String("ADD ArticleCount :one"),
-				ExpressionAttributeValues: IntKey(":one", 1),
+				TableName:        aws.String(TagTableName.Get()),
+				Key:              StringKey("Tag", tag),
+				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
+				ExpressionAttributeValues: AWSObject{
+					":one":  IntValue(1),
+					":zero": IntValue(0),
+				},
 			},
 		})
 	}
@@ -383,10 +386,13 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		// Update article count for each tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:                 aws.String(TagTableName.Get()),
-				Key:                       StringKey("Tag", tag),
-				UpdateExpression:          aws.String("ADD ArticleCount :one"),
-				ExpressionAttributeValues: IntKey(":one", 1),
+				TableName:        aws.String(TagTableName.Get()),
+				Key:              StringKey("Tag", tag),
+				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
+				ExpressionAttributeValues: AWSObject{
+					":one":  IntValue(1),
+					":zero": IntValue(0),
+				},
 			},
 		})
 	}

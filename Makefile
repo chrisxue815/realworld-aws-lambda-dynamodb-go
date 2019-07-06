@@ -1,7 +1,6 @@
 .PHONY: build clean deploy gomodgen
 
 build: gomodgen
-	export GO111MODULE=on
 	./gobuild.sh
 
 clean:
