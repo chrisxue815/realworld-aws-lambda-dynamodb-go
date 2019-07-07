@@ -14,6 +14,7 @@ func GetTags() ([]string, error) {
 		TableName:                 aws.String(TagTableName.Get()),
 		IndexName:                 aws.String("ArticleCount"),
 		KeyConditionExpression:    aws.String("Dummy=:zero"),
+		FilterExpression:          aws.String("ArticleCount>:zero"),
 		ExpressionAttributeValues: IntKey(":zero", 0),
 		Limit:                     aws.Int64(maxNumTags),
 		ScanIndexForward:          aws.Bool(false),
