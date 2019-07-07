@@ -290,9 +290,14 @@ func GetArticleBySlug(slug string) (model.Article, error) {
 	}
 
 	article := model.Article{}
-	err = GetItemByKey(ArticleTableName.Get(), Int64Key("ArticleId", articleId), &article)
+	found, err := GetItemByKey(ArticleTableName.Get(), Int64Key("ArticleId", articleId), &article)
+
 	if err != nil {
 		return model.Article{}, err
+	}
+
+	if !found {
+		return model.Article{}, util.NewInputError("slug", "not found")
 	}
 
 	return article, nil

@@ -41,10 +41,6 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	if article.ArticleId == 0 {
-		return util.NewErrorResponse(util.NewInputError("slug", "not found"))
-	}
-
 	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, []model.Article{article})
 	if err != nil {
 		return util.NewErrorResponse(err)

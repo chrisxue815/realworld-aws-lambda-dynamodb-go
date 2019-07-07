@@ -7,7 +7,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-func GetItemByKey(tableName string, key AWSObject, out interface{}) error {
+func GetItemByKey(tableName string, key AWSObject, out interface{}) (bool, error) {
 	input := dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
 		Key:       key,
@@ -15,15 +15,19 @@ func GetItemByKey(tableName string, key AWSObject, out interface{}) error {
 
 	output, err := DynamoDB().GetItem(&input)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if len(output.Item) == 0 {
+		return false, nil
 	}
 
 	err = dynamodbattribute.UnmarshalMap(output.Item, out)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]AWSObject, error) {

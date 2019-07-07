@@ -62,10 +62,6 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	if oldArticle.ArticleId == 0 {
-		return util.NewErrorResponse(util.NewInputError("slug", "not found"))
-	}
-
 	newArticle := model.Article{
 		ArticleId:      oldArticle.ArticleId,
 		Title:          requestBody.Article.Title,

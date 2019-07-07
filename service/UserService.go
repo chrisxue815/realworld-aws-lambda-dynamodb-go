@@ -53,8 +53,9 @@ func PutUser(user model.User) error {
 
 	_, err = DynamoDB().TransactWriteItems(&transaction)
 	if err != nil {
-		//TODO: NewInputError("username", "has already been taken")
-		//TODO: NewInputError("email", "has already been taken")
+		// TODO: distinguish:
+		// NewInputError("username", "has already been taken")
+		// NewInputError("email", "has already been taken")
 		return err
 	}
 
@@ -185,9 +186,14 @@ func GetUserByEmail(email string) (model.User, error) {
 
 func GetUsernameByEmail(email string) (string, error) {
 	emailUser := model.EmailUser{}
-	err := GetItemByKey(EmailUserTableName.Get(), StringKey("Email", email), &emailUser)
+	found, err := GetItemByKey(EmailUserTableName.Get(), StringKey("Email", email), &emailUser)
+
 	if err != nil {
 		return "", err
+	}
+
+	if !found {
+		return "", util.NewInputError("email", "not found")
 	}
 
 	return emailUser.Username, nil
@@ -195,7 +201,16 @@ func GetUsernameByEmail(email string) (string, error) {
 
 func GetUserByUsername(username string) (model.User, error) {
 	user := model.User{}
-	err := GetItemByKey(UserTableName.Get(), StringKey("Username", username), &user)
+	found, err := GetItemByKey(UserTableName.Get(), StringKey("Username", username), &user)
+
+	if err != nil {
+		return model.User{}, err
+	}
+
+	if !found {
+		return model.User{}, util.NewInputError("username", "not found")
+	}
+
 	return user, err
 }
 
@@ -210,7 +225,7 @@ func GetCurrentUser(auth string) (*model.User, string, error) {
 		return nil, "", err
 	}
 
-	return &user, token, err
+	return &user, token, nil
 }
 
 func GetArticleAuthors(articles []model.Article) ([]model.User, error) {
