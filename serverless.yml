@@ -111,6 +111,14 @@ functions:
               paths:
                 slug: true
 
+  tags-get:
+    handler: bin/tags-get
+    events:
+      - http:
+          path: tags
+          method: get
+          cors: true
+
 resources:
   Resources:
     UserTable:

@@ -32,6 +32,12 @@ type ArticleTag struct {
 	CreatedAt int64
 }
 
+type Tag struct {
+	Tag          string
+	ArticleCount int64
+	Dummy        byte // Always 0, used for sorting articles by ArticleCount
+}
+
 type FavoriteArticle struct {
 	Username   string
 	ArticleId  int64
