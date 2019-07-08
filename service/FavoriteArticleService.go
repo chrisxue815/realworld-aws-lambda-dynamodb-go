@@ -93,3 +93,42 @@ func reverseIndexArticleIds(articles []model.Article) map[int64]int {
 	}
 	return indices
 }
+
+func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
+	item, err := dynamodbattribute.MarshalMap(favoriteArticle)
+	if err != nil {
+		return err
+	}
+
+	transactItems := make([]*dynamodb.TransactWriteItem, 0, 2)
+
+	// Favorite the article
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Put: &dynamodb.Put{
+			TableName: aws.String(FavoriteArticleTableName.Get()),
+			Item:      item,
+		},
+	})
+
+	// Update favorites count
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Update: &dynamodb.Update{
+			TableName:           aws.String(ArticleTableName.Get()),
+			Key:                 Int64Key("ArticleId", favoriteArticle.ArticleId),
+			ConditionExpression: aws.String("attribute_exists(ArticleId)"),
+			UpdateExpression:    aws.String("ADD FavoritesCount :one"),
+			ExpressionAttributeValues: AWSObject{
+				":one": IntValue(1),
+			},
+		},
+	})
+
+	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+		TransactItems: transactItems,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

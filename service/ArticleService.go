@@ -289,6 +289,10 @@ func GetArticleBySlug(slug string) (model.Article, error) {
 		return model.Article{}, err
 	}
 
+	return GetArticleByArticleId(articleId)
+}
+
+func GetArticleByArticleId(articleId int64) (model.Article, error) {
 	article := model.Article{}
 	found, err := GetItemByKey(ArticleTableName.Get(), Int64Key("ArticleId", articleId), &article)
 

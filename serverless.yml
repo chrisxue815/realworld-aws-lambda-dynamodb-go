@@ -111,6 +111,18 @@ functions:
               paths:
                 slug: true
 
+  articles-slug-favorite-post:
+    handler: bin/articles-slug-favorite-post
+    events:
+      - http:
+          path: articles/{slug}/favorite
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
   tags-get:
     handler: bin/tags-get
     events:
