@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
 func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int64, error) {
@@ -105,29 +106,29 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 	// Favorite the article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Put: &dynamodb.Put{
-			TableName: aws.String(FavoriteArticleTableName.Get()),
-			Item:      item,
+			TableName:           aws.String(FavoriteArticleTableName.Get()),
+			Item:                item,
+			ConditionExpression: aws.String("attribute_not_exists(Username) AND attribute_not_exists(ArticleId)"),
 		},
 	})
 
 	// Update favorites count
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName:           aws.String(ArticleTableName.Get()),
-			Key:                 Int64Key("ArticleId", favoriteArticle.ArticleId),
-			ConditionExpression: aws.String("attribute_exists(ArticleId)"),
-			UpdateExpression:    aws.String("ADD FavoritesCount :one"),
-			ExpressionAttributeValues: AWSObject{
-				":one": IntValue(1),
-			},
+			TableName:                 aws.String(ArticleTableName.Get()),
+			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
+			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
+			UpdateExpression:          aws.String("ADD FavoritesCount :one"),
+			ExpressionAttributeValues: IntKey(":one", 1),
 		},
 	})
 
 	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
+
 	if err != nil {
-		return err
+		return util.NewInputError("slug", "not found or already favorited")
 	}
 
 	return nil
