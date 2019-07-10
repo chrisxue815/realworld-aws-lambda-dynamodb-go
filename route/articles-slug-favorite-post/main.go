@@ -45,9 +45,11 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	favoriteArticle := model.FavoriteArticle{
-		Username:   user.Username,
-		ArticleId:  articleId,
-		FavoriteAt: time.Now().UTC().UnixNano(),
+		FavoriteArticleKey: model.FavoriteArticleKey{
+			Username:  user.Username,
+			ArticleId: articleId,
+		},
+		FavoritedAt: time.Now().UTC().UnixNano(),
 	}
 
 	err = service.SetFavoriteArticle(favoriteArticle)

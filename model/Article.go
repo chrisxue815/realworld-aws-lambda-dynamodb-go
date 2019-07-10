@@ -38,10 +38,14 @@ type Tag struct {
 	Dummy        byte // Always 0, used for sorting articles by ArticleCount
 }
 
+type FavoriteArticleKey struct {
+	Username  string
+	ArticleId int64
+}
+
 type FavoriteArticle struct {
-	Username   string
-	ArticleId  int64
-	FavoriteAt int64
+	FavoriteArticleKey
+	FavoritedAt int64
 }
 
 func (article *Article) Validate() error {
