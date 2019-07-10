@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
@@ -32,8 +31,7 @@ func PutArticle(article *model.Article) error {
 			return err
 		}
 
-		aerr, ok := err.(awserr.Error)
-		if !ok || aerr.Code() != dynamodb.ErrCodeConditionalCheckFailedException {
+		if !IsConditionalCheckFailed(err) {
 			return err
 		}
 
