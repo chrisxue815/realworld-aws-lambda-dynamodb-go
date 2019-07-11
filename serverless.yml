@@ -1,4 +1,4 @@
-service: realworld-aws-lambda-dynamodb-go
+service: realworld
 
 frameworkVersion: '>=1.28.0 <2.0.0'
 
@@ -117,6 +117,18 @@ functions:
       - http:
           path: articles/{slug}/favorite
           method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
+  articles-slug-favorite-delete:
+    handler: bin/articles-slug-favorite-delete
+    events:
+      - http:
+          path: articles/{slug}/favorite
+          method: delete
           cors: true
           request:
             parameters:

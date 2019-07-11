@@ -133,3 +133,42 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 
 	return nil
 }
+
+func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
+	item, err := dynamodbattribute.MarshalMap(favoriteArticle)
+	if err != nil {
+		return err
+	}
+
+	transactItems := make([]*dynamodb.TransactWriteItem, 0, 2)
+
+	// Unfavorite the article
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Delete: &dynamodb.Delete{
+			TableName:           aws.String(FavoriteArticleTableName.Get()),
+			Key:                 item,
+			ConditionExpression: aws.String("attribute_exists(Username) AND attribute_exists(ArticleId)"),
+		},
+	})
+
+	// Update favorites count
+	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
+		Update: &dynamodb.Update{
+			TableName:                 aws.String(ArticleTableName.Get()),
+			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
+			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
+			UpdateExpression:          aws.String("ADD FavoritesCount :minus_one"),
+			ExpressionAttributeValues: IntKey(":minus_one", -1),
+		},
+	})
+
+	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+		TransactItems: transactItems,
+	})
+
+	if err != nil {
+		return util.NewInputError("slug", "not found or not favorited")
+	}
+
+	return nil
+}
