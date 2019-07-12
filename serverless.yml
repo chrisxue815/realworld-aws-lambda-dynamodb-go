@@ -111,8 +111,8 @@ functions:
               paths:
                 slug: true
 
-  articles-slug-favorite-post:
-    handler: bin/articles-slug-favorite-post
+  favorite-post:
+    handler: bin/favorite-post
     events:
       - http:
           path: articles/{slug}/favorite
@@ -123,8 +123,8 @@ functions:
               paths:
                 slug: true
 
-  articles-slug-favorite-delete:
-    handler: bin/articles-slug-favorite-delete
+  favorite-delete:
+    handler: bin/favorite-delete
     events:
       - http:
           path: articles/{slug}/favorite
