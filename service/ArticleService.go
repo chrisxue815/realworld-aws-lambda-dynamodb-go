@@ -35,12 +35,12 @@ func PutArticle(article *model.Article) error {
 			return err
 		}
 
-		RenewArticleIdRand()
+		ArticleIdRand.RenewSeed()
 	}
 }
 
 func putArticleWithRandomId(article *model.Article) error {
-	article.ArticleId = 1 + ArticleIdRand().Int63n(model.MaxArticleId-1) // range: [1, MaxArticleId)
+	article.ArticleId = 1 + ArticleIdRand.Get().Int63n(model.MaxArticleId-1) // range: [1, MaxArticleId)
 	article.MakeSlug()
 
 	articleItem, err := dynamodbattribute.MarshalMap(article)
@@ -268,12 +268,17 @@ func GetArticleRelatedProperties(user *model.User, articles []model.Article) ([]
 		return nil, nil, nil, err
 	}
 
-	authors, err := GetArticleAuthors(articles)
+	authorUsernames := make([]string, 0, len(articles))
+	for _, article := range articles {
+		authorUsernames = append(authorUsernames, article.Author)
+	}
+
+	authors, err := GetUserListByUsername(authorUsernames)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	following, err := IsFollowingArticleAuthor(user, articles)
+	following, err := IsFollowing(user, authorUsernames)
 	if err != nil {
 		return nil, nil, nil, err
 	}

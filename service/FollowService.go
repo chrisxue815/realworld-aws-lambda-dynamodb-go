@@ -7,18 +7,18 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
-func IsFollowingArticleAuthor(user *model.User, articles []model.Article) ([]bool, error) {
-	if user == nil || len(articles) == 0 {
-		return make([]bool, len(articles)), nil
+func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
+	if user == nil || len(usernames) == 0 {
+		return make([]bool, len(usernames)), nil
 	}
 
-	authors := make(map[string]bool)
-	for _, article := range articles {
-		authors[article.Author] = true
+	usernameSet := make(map[string]bool)
+	for _, username := range usernames {
+		usernameSet[username] = true
 	}
 
-	keys := make([]AWSObject, 0, len(authors))
-	for author := range authors {
+	keys := make([]AWSObject, 0, len(usernameSet))
+	for author := range usernameSet {
 		keys = append(keys, AWSObject{
 			"Follower":  StringValue(user.Username),
 			"Publisher": StringValue(author),
@@ -34,7 +34,7 @@ func IsFollowingArticleAuthor(user *model.User, articles []model.Article) ([]boo
 		},
 	}
 
-	responses, err := BatchGetItems(&batchGetFollows, len(authors))
+	responses, err := BatchGetItems(&batchGetFollows, len(usernameSet))
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +55,9 @@ func IsFollowingArticleAuthor(user *model.User, articles []model.Article) ([]boo
 		}
 	}
 
-	following := make([]bool, 0, len(articles))
-	for _, article := range articles {
-		following = append(following, followingUser[article.Author])
+	following := make([]bool, 0, len(usernames))
+	for _, username := range usernames {
+		following = append(following, followingUser[username])
 	}
 
 	return following, nil

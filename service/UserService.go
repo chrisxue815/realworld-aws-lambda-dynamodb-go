@@ -228,18 +228,18 @@ func GetCurrentUser(auth string) (*model.User, string, error) {
 	return &user, token, nil
 }
 
-func GetArticleAuthors(articles []model.Article) ([]model.User, error) {
-	if len(articles) == 0 {
+func GetUserListByUsername(usernames []string) ([]model.User, error) {
+	if len(usernames) == 0 {
 		return make([]model.User, 0), nil
 	}
 
-	usernames := make(map[string]bool)
-	for _, article := range articles {
-		usernames[article.Author] = true
+	usernameSet := make(map[string]bool)
+	for _, username := range usernames {
+		usernameSet[username] = true
 	}
 
-	keys := make([]AWSObject, 0, len(usernames))
-	for username := range usernames {
+	keys := make([]AWSObject, 0, len(usernameSet))
+	for username := range usernameSet {
 		keys = append(keys, StringKey("Username", username))
 	}
 
@@ -272,9 +272,9 @@ func GetArticleAuthors(articles []model.Article) ([]model.User, error) {
 		}
 	}
 
-	users := make([]model.User, 0, len(articles))
-	for _, article := range articles {
-		users = append(users, usersByUsername[article.Author])
+	users := make([]model.User, 0, len(usernames))
+	for _, username := range usernames {
+		users = append(users, usersByUsername[username])
 	}
 
 	return users, nil

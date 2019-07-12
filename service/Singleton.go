@@ -11,9 +11,7 @@ import (
 )
 
 var once sync.Once
-
 var svc *dynamodb.DynamoDB
-var articleIdRand *rand.Rand
 
 var UserTableName = NewTableName("user")
 var EmailUserTableName = NewTableName("email-user")
@@ -24,28 +22,20 @@ var TagTableName = NewTableName("tag")
 var FavoriteArticleTableName = NewTableName("favorite-article")
 var CommentTableName = NewTableName("comment")
 
+var ArticleIdRand = NewRand()
+var CommentIdRand = NewRand()
+
 func initializeSingletons() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 
 	svc = dynamodb.New(sess)
-
-	RenewArticleIdRand()
 }
 
 func DynamoDB() *dynamodb.DynamoDB {
 	once.Do(initializeSingletons)
 	return svc
-}
-
-func ArticleIdRand() *rand.Rand {
-	once.Do(initializeSingletons)
-	return articleIdRand
-}
-
-func RenewArticleIdRand() {
-	articleIdRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 type TableName struct {
@@ -65,4 +55,22 @@ func (t *TableName) Get() string {
 		t.fullName = fmt.Sprintf("realworld-%s-%s", os.Getenv("STAGE"), t.suffix)
 	})
 	return t.fullName
+}
+
+type Rand struct {
+	random *rand.Rand
+}
+
+func NewRand() Rand {
+	r := Rand{}
+	r.RenewSeed()
+	return r
+}
+
+func (r *Rand) RenewSeed() {
+	r.random = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
+func (r *Rand) Get() *rand.Rand {
+	return r.random
 }
