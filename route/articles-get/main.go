@@ -62,10 +62,10 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	articlesResponse := make([]ArticleResponse, 0, len(articles))
+	articleResponses := make([]ArticleResponse, 0, len(articles))
 
 	for i, article := range articles {
-		articlesResponse = append(articlesResponse, ArticleResponse{
+		articleResponses = append(articleResponses, ArticleResponse{
 			Slug:           article.Slug,
 			Title:          article.Title,
 			Description:    article.Description,
@@ -85,8 +85,8 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	responseBody := ResponseBody{
-		Articles:      articlesResponse,
-		ArticlesCount: len(articlesResponse),
+		Articles:      articleResponses,
+		ArticlesCount: len(articleResponses),
 	}
 
 	return util.NewSuccessResponse(200, responseBody)
