@@ -111,6 +111,18 @@ functions:
               paths:
                 slug: true
 
+  comments-post:
+    handler: bin/comments-post
+    events:
+      - http:
+          path: articles/{slug}/comments
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
   favorite-post:
     handler: bin/favorite-post
     events:
@@ -334,9 +346,9 @@ resources:
       Properties:
         TableName: realworld-${self:provider.environment.STAGE}-comment
         AttributeDefinitions:
-          - AttributeName: CommentId
-            AttributeType: N
           - AttributeName: ArticleId
+            AttributeType: N
+          - AttributeName: CommentId
             AttributeType: N
           - AttributeName: CreatedAt
             AttributeType: N
