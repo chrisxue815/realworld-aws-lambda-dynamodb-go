@@ -123,6 +123,18 @@ functions:
               paths:
                 slug: true
 
+  comments-get:
+    handler: bin/comments-get
+    events:
+      - http:
+          path: articles/{slug}/comments
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+
   favorite-post:
     handler: bin/favorite-post
     events:

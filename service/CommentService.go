@@ -52,3 +52,51 @@ func putCommentWithRandomId(comment *model.Comment) error {
 
 	return err
 }
+
+func GetCommentRelatedProperties(user *model.User, comments []model.Comment) ([]model.User, []bool, error) {
+	authorUsernames := make([]string, 0, len(comments))
+	for _, comment := range comments {
+		authorUsernames = append(authorUsernames, comment.Author)
+	}
+
+	authors, err := GetUserListByUsername(authorUsernames)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	following, err := IsFollowing(user, authorUsernames)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return authors, following, nil
+}
+
+func GetComments(slug string) ([]model.Comment, error) {
+	articleId, err := model.SlugToArticleId(slug)
+	if err != nil {
+		return nil, err
+	}
+
+	queryComments := dynamodb.QueryInput{
+		TableName:                 aws.String(CommentTableName.Get()),
+		IndexName:                 aws.String("CreatedAt"),
+		KeyConditionExpression:    aws.String("ArticleId=:articleId"),
+		ExpressionAttributeValues: Int64Key(":articleId", articleId),
+		ScanIndexForward:          aws.Bool(true),
+	}
+
+	const queryInitialCapacity = 16
+	items, err := QueryItems(&queryComments, 0, queryInitialCapacity)
+	if err != nil {
+		return nil, err
+	}
+
+	comments := make([]model.Comment, len(items))
+	err = dynamodbattribute.UnmarshalListOfMaps(items, &comments)
+	if err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}
