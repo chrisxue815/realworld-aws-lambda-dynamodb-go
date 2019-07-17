@@ -135,6 +135,19 @@ functions:
               paths:
                 slug: true
 
+  comments-delete:
+    handler: bin/comments-delete
+    events:
+      - http:
+          path: articles/{slug}/comments/{id}
+          method: delete
+          cors: true
+          request:
+            parameters:
+              paths:
+                slug: true
+                id: true
+
   favorite-post:
     handler: bin/favorite-post
     events:

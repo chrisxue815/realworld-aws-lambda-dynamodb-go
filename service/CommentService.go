@@ -100,3 +100,31 @@ func GetComments(slug string) ([]model.Comment, error) {
 
 	return comments, nil
 }
+
+func DeleteComment(slug string, commentId int64, username string) error {
+	articleId, err := model.SlugToArticleId(slug)
+	if err != nil {
+		return err
+	}
+
+	key := model.CommentKey{
+		ArticleId: articleId,
+		CommentId: commentId,
+	}
+
+	item, err := dynamodbattribute.MarshalMap(key)
+	if err != nil {
+		return err
+	}
+
+	deleteComment := dynamodb.DeleteItemInput{
+		TableName:                 aws.String(CommentTableName.Get()),
+		Key:                       item,
+		ConditionExpression:       aws.String("Author=:username"),
+		ExpressionAttributeValues: StringKey(":username", username),
+	}
+
+	_, err = DynamoDB().DeleteItem(&deleteComment)
+
+	return err
+}

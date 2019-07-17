@@ -6,9 +6,13 @@ import (
 
 const MaxCommentId = 0x1000000 // exclusive
 
-type Comment struct {
+type CommentKey struct {
 	ArticleId int64
 	CommentId int64
+}
+
+type Comment struct {
+	CommentKey
 	CreatedAt int64
 	UpdatedAt int64
 	Body      string

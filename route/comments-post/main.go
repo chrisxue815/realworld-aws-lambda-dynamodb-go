@@ -60,7 +60,9 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	nowStr := now.Format(model.TimestampFormat)
 
 	comment := model.Comment{
-		ArticleId: article.ArticleId,
+		CommentKey: model.CommentKey{
+			ArticleId: article.ArticleId,
+		},
 		CreatedAt: nowUnixNano,
 		UpdatedAt: nowUnixNano,
 		Body:      requestBody.Comment.Body,
