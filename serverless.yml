@@ -59,6 +59,18 @@ functions:
           method: put
           cors: true
 
+  profiles-get:
+    handler: bin/profiles-get
+    events:
+      - http:
+          path: profiles/{username}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                username: true
+
   articles-post:
     handler: bin/articles-post
     events:
