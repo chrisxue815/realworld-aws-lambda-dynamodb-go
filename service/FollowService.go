@@ -62,3 +62,24 @@ func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
 
 	return following, nil
 }
+
+func Follow(follower string, publisher string) error {
+	follow := model.Follow{
+		Follower:  follower,
+		Publisher: publisher,
+	}
+
+	item, err := dynamodbattribute.MarshalMap(follow)
+	if err != nil {
+		return err
+	}
+
+	putFollow := dynamodb.PutItemInput{
+		TableName: aws.String(FollowTableName.Get()),
+		Item:      item,
+	}
+
+	_, err = DynamoDB().PutItem(&putFollow)
+
+	return err
+}

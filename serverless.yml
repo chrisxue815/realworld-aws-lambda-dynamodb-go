@@ -71,6 +71,18 @@ functions:
               paths:
                 username: true
 
+  profiles-follow-post:
+    handler: bin/profiles-follow-post
+    events:
+      - http:
+          path: profiles/{username}/follow
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                username: true
+
   articles-post:
     handler: bin/articles-post
     events:
