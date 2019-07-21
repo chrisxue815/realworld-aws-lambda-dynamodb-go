@@ -17,20 +17,20 @@ type ResponseBody struct {
 func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	user, _, _ := service.GetCurrentUser(request.Headers["Authorization"])
 
-	profile, err := service.GetUserByUsername(request.PathParameters["username"])
+	publisher, err := service.GetUserByUsername(request.PathParameters["username"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	following, err := service.IsFollowing(user, []string{profile.Username})
+	following, err := service.IsFollowing(user, []string{publisher.Username})
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
 	responseBody := ResponseBody{
-		Username:  profile.Username,
-		Image:     profile.Image,
-		Bio:       profile.Bio,
+		Username:  publisher.Username,
+		Image:     publisher.Image,
+		Bio:       publisher.Bio,
 		Following: following[0],
 	}
 
