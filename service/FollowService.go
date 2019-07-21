@@ -83,3 +83,24 @@ func Follow(follower string, publisher string) error {
 
 	return err
 }
+
+func Unfollow(follower string, publisher string) error {
+	follow := model.Follow{
+		Follower:  follower,
+		Publisher: publisher,
+	}
+
+	item, err := dynamodbattribute.MarshalMap(follow)
+	if err != nil {
+		return err
+	}
+
+	deleteFollow := dynamodb.DeleteItemInput{
+		TableName: aws.String(FollowTableName.Get()),
+		Key:       item,
+	}
+
+	_, err = DynamoDB().DeleteItem(&deleteFollow)
+
+	return err
+}

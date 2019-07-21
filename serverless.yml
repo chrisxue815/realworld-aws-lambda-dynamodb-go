@@ -83,6 +83,18 @@ functions:
               paths:
                 username: true
 
+  profiles-follow-delete:
+    handler: bin/profiles-follow-delete
+    events:
+      - http:
+          path: profiles/{username}/follow
+          method: delete
+          cors: true
+          request:
+            parameters:
+              paths:
+                username: true
+
   articles-post:
     handler: bin/articles-post
     events:
