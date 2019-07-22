@@ -111,6 +111,14 @@ functions:
           method: get
           cors: true
 
+  articles-feed-get:
+    handler: bin/articles-feed-get
+    events:
+      - http:
+          path: articles/feed
+          method: get
+          cors: true
+
   articles-slug-get:
     handler: bin/articles-slug-get
     events:

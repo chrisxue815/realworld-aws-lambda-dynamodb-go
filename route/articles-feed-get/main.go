@@ -36,7 +36,10 @@ type AuthorResponse struct {
 }
 
 func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, _ := service.GetCurrentUser(request.Headers["Authorization"])
+	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+	if err != nil {
+		return util.NewUnauthorizedResponse()
+	}
 
 	offset, err := strconv.Atoi(request.QueryStringParameters["offset"])
 	if err != nil {
@@ -48,16 +51,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		limit = 20
 	}
 
-	author := request.QueryStringParameters["author"]
-	tag := request.QueryStringParameters["tag"]
-	favorited := request.QueryStringParameters["favorited"]
-
-	articles, err := service.GetArticles(offset, limit, author, tag, favorited)
+	articles, err := service.GetFeed(user.Username, offset, limit)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, articles, true)
+	isFavorited, authors, _, err := service.GetArticleRelatedProperties(user, articles, false)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -79,7 +78,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 				Username:  authors[i].Username,
 				Bio:       authors[i].Bio,
 				Image:     authors[i].Image,
-				Following: following[i],
+				Following: true,
 			},
 		})
 	}

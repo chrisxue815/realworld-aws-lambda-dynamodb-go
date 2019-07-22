@@ -262,7 +262,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 	return articles, nil
 }
 
-func GetArticleRelatedProperties(user *model.User, articles []model.Article) ([]bool, []model.User, []bool, error) {
+func GetArticleRelatedProperties(user *model.User, articles []model.Article, getFollowing bool) ([]bool, []model.User, []bool, error) {
 	isFavorited, err := IsArticleFavoritedByUser(user, articles)
 	if err != nil {
 		return nil, nil, nil, err
@@ -278,9 +278,13 @@ func GetArticleRelatedProperties(user *model.User, articles []model.Article) ([]
 		return nil, nil, nil, err
 	}
 
-	following, err := IsFollowing(user, authorUsernames)
-	if err != nil {
-		return nil, nil, nil, err
+	following := make([]bool, 0)
+
+	if getFollowing {
+		following, err = IsFollowing(user, authorUsernames)
+		if err != nil {
+			return nil, nil, nil, err
+		}
 	}
 
 	return isFavorited, authors, following, nil
@@ -471,8 +475,8 @@ func DeleteArticle(slug string, username string) error {
 		},
 	})
 
-	// TODO:
-	// DynamoDB doesn't support deleting a whole partition by specifying just the partition key.
+	// TODO: DynamoDB doesn't support deleting a whole partition by specifying just the partition key.
+	// https://stackoverflow.com/questions/34259358/dynamodb-delete-all-items-having-same-hash-key
 	// It's probably easier to delete related items in FavoriteArticleTable and CommentTable
 	// offline (despite potential article id overwrite).
 
@@ -505,4 +509,42 @@ func DeleteArticle(slug string, username string) error {
 	}
 
 	return nil
+}
+
+func GetFeed(username string, offset, limit int) ([]model.Article, error) {
+	queryPublishers := dynamodb.QueryInput{
+		TableName:                 aws.String(FollowTableName.Get()),
+		KeyConditionExpression:    aws.String("Follower=:username"),
+		ExpressionAttributeValues: StringKey(":username", username),
+		ProjectionExpression:      aws.String("Publisher"),
+	}
+
+	const queryInitialCapacity = 16
+	items, err := QueryItems(&queryPublishers, 0, queryInitialCapacity)
+	if err != nil {
+		return nil, err
+	}
+
+	follows := make([]model.Follow, 0, len(items))
+	err = dynamodbattribute.UnmarshalListOfMaps(items, &follows)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: DynamoDB doesn't support batch queries
+	// https://stackoverflow.com/questions/24953783/dynamodb-batch-execute-queryrequests
+	// Concurrent queries can probably improve the performance of the following operations.
+
+	articlesByAuthor := make(model.ArticlePriorityQueue, 0, len(follows))
+
+	for _, follow := range follows {
+		articles, err := getArticlesByAuthor(follow.Publisher, 0, limit)
+		if err != nil {
+			return nil, err
+		}
+
+		articlesByAuthor = append(articlesByAuthor, articles)
+	}
+
+	return model.MergeArticles(articlesByAuthor, offset, limit), nil
 }

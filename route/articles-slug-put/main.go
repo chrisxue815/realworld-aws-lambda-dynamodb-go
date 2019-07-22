@@ -79,7 +79,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, []model.Article{newArticle})
+	isFavorited, authors, following, err := service.GetArticleRelatedProperties(user, []model.Article{newArticle}, true)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
