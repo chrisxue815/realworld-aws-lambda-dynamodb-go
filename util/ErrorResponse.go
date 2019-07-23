@@ -45,6 +45,7 @@ func NewErrorResponse(err error) (events.APIGatewayProxyResponse, error) {
 	response := events.APIGatewayProxyResponse{
 		StatusCode: 422,
 		Body:       string(jsonBody),
+		Headers:    CORSHeaders(),
 	}
 	return response, nil
 }
@@ -52,6 +53,7 @@ func NewErrorResponse(err error) (events.APIGatewayProxyResponse, error) {
 func NewUnauthorizedResponse() (events.APIGatewayProxyResponse, error) {
 	response := events.APIGatewayProxyResponse{
 		StatusCode: 401,
+		Headers:    CORSHeaders(),
 	}
 	return response, nil
 }

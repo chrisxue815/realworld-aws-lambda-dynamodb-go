@@ -18,7 +18,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
+	return util.NewSuccessResponse(200, nil)
 }
 
 func main() {
