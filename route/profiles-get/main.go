@@ -8,6 +8,10 @@ import (
 )
 
 type ResponseBody struct {
+	Profile ProfileResponse `json:"profile"`
+}
+
+type ProfileResponse struct {
 	Username  string `json:"username"`
 	Image     string `json:"image"`
 	Bio       string `json:"bio"`
@@ -28,10 +32,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	responseBody := ResponseBody{
-		Username:  publisher.Username,
-		Image:     publisher.Image,
-		Bio:       publisher.Bio,
-		Following: following[0],
+		Profile: ProfileResponse{
+			Username:  publisher.Username,
+			Image:     publisher.Image,
+			Bio:       publisher.Bio,
+			Following: following[0],
+		},
 	}
 
 	return util.NewSuccessResponse(200, responseBody)
