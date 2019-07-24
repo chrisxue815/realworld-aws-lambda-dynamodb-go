@@ -17,7 +17,6 @@ func GetTags() ([]string, error) {
 		ExpressionAttributeValues: IntKey(":zero", 0),
 		Limit:                     aws.Int64(maxNumTags),
 		ScanIndexForward:          aws.Bool(false),
-		ProjectionExpression:      aws.String("Tag"),
 	}
 
 	items, err := QueryItems(&queryTags, 0, maxNumTags)
