@@ -83,7 +83,7 @@ func GetComments(slug string) ([]model.Comment, error) {
 		IndexName:                 aws.String("CreatedAt"),
 		KeyConditionExpression:    aws.String("ArticleId=:articleId"),
 		ExpressionAttributeValues: Int64Key(":articleId", articleId),
-		ScanIndexForward:          aws.Bool(true),
+		ScanIndexForward:          aws.Bool(false),
 	}
 
 	const queryInitialCapacity = 16
