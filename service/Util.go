@@ -76,11 +76,13 @@ func IsConditionalCheckFailed(err error) bool {
 	case dynamodb.ErrCodeConditionalCheckFailedException:
 		return true
 	case dynamodb.ErrCodeTransactionCanceledException:
-		// There should be a better way to do this.
-		// https://github.com/aws/aws-sdk-go/issues/2318
+		// TODO: DynamoDB Go client doesn't provide individual cancellation reasons for a transaction.
 		// "If using Java, DynamoDB lists the cancellation reasons on the CancellationReasons
 		// property. This property is not set for other languages."
 		// https://docs.aws.amazon.com/sdk-for-go/api/service/dynamodb/#DynamoDB.TransactWriteItems
+		// Here we depend on awserr.Error.Message(), which looks like
+		// "Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, None]"
+		// https://github.com/aws/aws-sdk-go/issues/2318
 		return strings.Contains(aerr.Message(), "ConditionalCheckFailed")
 	default:
 		return false
