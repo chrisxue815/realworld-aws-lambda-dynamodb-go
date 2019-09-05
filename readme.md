@@ -49,11 +49,12 @@ For example, the following section means `POST /users` is handled by `bin/users-
 # Design choices
 * Scrypt-based password hasing
 * Input validation
-* Data consistency
+* Data consistency with DynamoDB transactions
 
-These tradeoffs are made for simpler code:
+These tradeoffs were made for simpler code:
 * Hardcoded secret. Cons: can't invalidate tokens
-* Shared states (like DB and RNG) are singletons, no dependency injection. Cons: can't control their lifecycles, potential memory leak, unit-test-unfriendly
-* Immutable username
-* Case-sensitive username
-* Performance bottlenecks around global secondary indices with a single hash-key value, like ArticleTable.CreatedAt and TagTable.ArticleCount.
+* Shared states (like DB and RNG) are singletons, no dependency injections used. Cons: can't control their lifecycles, potential memory leak, unit-test-unfriendly
+* Usernames can't be changed
+* Usernames are case-sensitive
+* Performance bottlenecks around global secondary indices with a single hash-key value, like ArticleTable.CreatedAt and TagTable.ArticleCount
+* Performance bottlenecks around fan-in-based article feed aggregation
