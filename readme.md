@@ -2,9 +2,7 @@
 
 > ### AWS Lambda + DynamoDB + Go codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
-
-### [Demo](https://chrisxue815.github.io/realworld/build/#/)&nbsp;&nbsp;&nbsp;&nbsp;[RealWorld](https://github.com/gothinkster/realworld)
-
+### [Demo](https://chrisxue815.github.io/realworld/build/#/)
 
 This codebase was created to demonstrate a fully fledged fullstack application built with **AWS Lambda + DynamoDB + Go** including CRUD operations, authentication, routing, pagination, and more.
 
@@ -17,15 +15,18 @@ For more information on how to this works with other frontends/backends, head ov
 ## Prerequisite
 
 * Install Go, Node.js, Serverless CLI
-* `cd angularjs-realworld-example-app`
-* `npm install`
+* In `angularjs-realworld-example-app`, run `npm install`
 
 ## Build and deploy backend
+
+In the root directory of this project:
 
 * `make build`
 * `sls deploy --stage dev`
 
 ## Build and serve frontend
+
+In `angularjs-realworld-example-app`:
 
 * `npx gulp`
 
