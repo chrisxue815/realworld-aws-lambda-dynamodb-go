@@ -4,6 +4,8 @@
 
 ### [Demo](https://chrisxue815.github.io/realworld/build/#/)
 
+[![Build Status](https://travis-ci.org/chrisxue815/realworld-aws-lambda-dynamodb-go.svg?branch=master)](https://travis-ci.org/chrisxue815/realworld-aws-lambda-dynamodb-go)
+
 This codebase was created to demonstrate a fully fledged fullstack application built with **AWS Lambda + DynamoDB + Go** including CRUD operations, authentication, routing, pagination, and more.
 
 We've gone to great lengths to adhere to the **AWS Lambda + DynamoDB + Go** community styleguides & best practices.
