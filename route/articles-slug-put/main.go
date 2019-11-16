@@ -62,17 +62,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	newArticle := model.Article{
-		ArticleId:      oldArticle.ArticleId,
-		Title:          requestBody.Article.Title,
-		Description:    requestBody.Article.Description,
-		Body:           requestBody.Article.Body,
-		TagList:        requestBody.Article.TagList,
-		CreatedAt:      oldArticle.CreatedAt,
-		UpdatedAt:      time.Now().UTC().UnixNano(),
-		FavoritesCount: oldArticle.FavoritesCount,
-		Author:         oldArticle.Author,
-	}
+	newArticle := createNewArticle(requestBody, oldArticle)
 
 	err = service.UpdateArticle(oldArticle, &newArticle)
 	if err != nil {
@@ -105,6 +95,38 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	return util.NewSuccessResponse(200, responseBody)
+}
+
+func createNewArticle(requestBody RequestBody, oldArticle model.Article) model.Article {
+	newArticle := model.Article{
+		ArticleId:      oldArticle.ArticleId,
+		Title:          requestBody.Article.Title,
+		Description:    requestBody.Article.Description,
+		Body:           requestBody.Article.Body,
+		TagList:        requestBody.Article.TagList,
+		CreatedAt:      oldArticle.CreatedAt,
+		UpdatedAt:      time.Now().UTC().UnixNano(),
+		FavoritesCount: oldArticle.FavoritesCount,
+		Author:         oldArticle.Author,
+	}
+
+	if newArticle.Title == "" {
+		newArticle.Title = oldArticle.Title
+	}
+
+	if newArticle.Description == "" {
+		newArticle.Description = oldArticle.Description
+	}
+
+	if newArticle.Body == "" {
+		newArticle.Body = oldArticle.Body
+	}
+
+	if newArticle.TagList == nil {
+		newArticle.TagList = oldArticle.TagList
+	}
+
+	return newArticle
 }
 
 func main() {
