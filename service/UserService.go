@@ -214,7 +214,7 @@ func GetUserByUsername(username string) (model.User, error) {
 }
 
 func GetCurrentUser(auth string) (*model.User, string, error) {
-	username, token, err := VerifyAuthorization(auth)
+	username, token, err := model.VerifyAuthorization(auth)
 	if err != nil {
 		return nil, "", err
 	}

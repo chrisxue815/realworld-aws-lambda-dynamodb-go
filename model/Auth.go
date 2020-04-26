@@ -1,8 +1,7 @@
-package service
+package model
 
 import (
 	"fmt"
-	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/scrypt"
 	"strings"
@@ -16,7 +15,7 @@ var jwtSecret = []byte("C92cw5od80NCWIvu4NZ8AKp5NyTbnBmG")
 
 func Scrypt(password string) ([]byte, error) {
 	// https://godoc.org/golang.org/x/crypto/scrypt
-	passwordHash, err := scrypt.Key([]byte(password), passwordSalt, 32768, 8, 1, model.PasswordKeyLength)
+	passwordHash, err := scrypt.Key([]byte(password), passwordSalt, 32768, 8, 1, PasswordKeyLength)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func GenerateToken(username string) (string, error) {
 func VerifyAuthorization(auth string) (string, string, error) {
 	parts := strings.SplitN(auth, " ", 2)
 	if len(parts) != 2 || parts[0] != "Token" {
-		return "", "", model.NewInputError("Authorization", "invalid")
+		return "", "", NewInputError("Authorization", "invalid")
 	}
 
 	token := parts[1]
@@ -56,21 +55,21 @@ func VerifyToken(tokenString string) (string, error) {
 	}
 
 	if token == nil || !token.Valid {
-		return "", model.NewInputError("Authorization", "invalid token")
+		return "", NewInputError("Authorization", "invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", model.NewInputError("Authorization", "invalid claims")
+		return "", NewInputError("Authorization", "invalid claims")
 	}
 
 	if !claims.VerifyExpiresAt(time.Now().UTC().Unix(), true) {
-		return "", model.NewInputError("Authorization", "token expired")
+		return "", NewInputError("Authorization", "token expired")
 	}
 
 	username, ok := claims["sub"].(string)
 	if !ok {
-		return "", model.NewInputError("Authorization", "sub missing")
+		return "", NewInputError("Authorization", "sub missing")
 	}
 
 	return username, nil

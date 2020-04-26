@@ -43,7 +43,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	passwordHash, err := service.Scrypt(requestBody.User.Password)
+	passwordHash, err := model.Scrypt(requestBody.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -52,7 +52,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(model.NewInputError("password", "wrong password"))
 	}
 
-	token, err := service.GenerateToken(user.Username)
+	token, err := model.GenerateToken(user.Username)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}

@@ -49,7 +49,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	passwordHash, err := service.Scrypt(requestBody.User.Password)
+	passwordHash, err := model.Scrypt(requestBody.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
