@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
-	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
 func PutUser(user model.User) error {
@@ -169,7 +168,7 @@ func buildUserUpdateExpression(oldUser model.User, newUser model.User) (expressi
 
 func GetUserByEmail(email string) (model.User, error) {
 	if email == "" {
-		return model.User{}, util.NewInputError("email", "can't be blank")
+		return model.User{}, model.NewInputError("email", "can't be blank")
 	}
 
 	username, err := GetUsernameByEmail(email)
@@ -178,7 +177,7 @@ func GetUserByEmail(email string) (model.User, error) {
 	}
 
 	if username == "" {
-		return model.User{}, util.NewInputError("email", "not found")
+		return model.User{}, model.NewInputError("email", "not found")
 	}
 
 	return GetUserByUsername(username)
@@ -193,7 +192,7 @@ func GetUsernameByEmail(email string) (string, error) {
 	}
 
 	if !found {
-		return "", util.NewInputError("email", "not found")
+		return "", model.NewInputError("email", "not found")
 	}
 
 	return emailUser.Username, nil
@@ -208,7 +207,7 @@ func GetUserByUsername(username string) (model.User, error) {
 	}
 
 	if !found {
-		return model.User{}, util.NewInputError("username", "not found")
+		return model.User{}, model.NewInputError("username", "not found")
 	}
 
 	return user, err

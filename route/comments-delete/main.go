@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/service"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"strconv"
@@ -16,7 +17,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 
 	commentId, err := strconv.ParseInt(request.PathParameters["id"], 10, 64)
 	if err != nil {
-		return util.NewErrorResponse(util.NewInputError("id", "invalid"))
+		return util.NewErrorResponse(model.NewInputError("id", "invalid"))
 	}
 
 	err = service.DeleteComment(request.PathParameters["slug"], commentId, user.Username)

@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 	"github.com/gosimple/slug"
 	"strconv"
 	"strings"
@@ -50,21 +49,21 @@ type FavoriteArticle struct {
 
 func (article *Article) Validate() error {
 	if article.Title == "" {
-		return util.NewInputError("title", "can't be blank")
+		return NewInputError("title", "can't be blank")
 	}
 
 	if article.Description == "" {
-		return util.NewInputError("description", "can't be blank")
+		return NewInputError("description", "can't be blank")
 	}
 
 	if article.Body == "" {
-		return util.NewInputError("body", "can't be blank")
+		return NewInputError("body", "can't be blank")
 	}
 
 	if article.TagList == nil {
 		article.TagList = make([]string, 0)
 	} else if len(article.TagList) > MaxNumTagsPerArticle {
-		return util.NewInputError("tagList", fmt.Sprintf("cannot add more than %d tags per article", MaxNumTagsPerArticle))
+		return NewInputError("tagList", fmt.Sprintf("cannot add more than %d tags per article", MaxNumTagsPerArticle))
 	}
 
 	return nil
@@ -80,7 +79,7 @@ func SlugToArticleId(slug string) (int64, error) {
 
 	articleId, err := strconv.ParseInt(slug[dashIndex+1:], 16, 64)
 	if err != nil {
-		return 0, util.NewInputError("slug", "invalid")
+		return 0, NewInputError("slug", "invalid")
 	}
 
 	return articleId, nil

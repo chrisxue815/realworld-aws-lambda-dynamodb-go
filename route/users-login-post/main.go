@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/service"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
@@ -48,7 +49,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	}
 
 	if !bytes.Equal(passwordHash, user.PasswordHash) {
-		return util.NewErrorResponse(util.NewInputError("password", "wrong password"))
+		return util.NewErrorResponse(model.NewInputError("password", "wrong password"))
 	}
 
 	token, err := service.GenerateToken(user.Username)

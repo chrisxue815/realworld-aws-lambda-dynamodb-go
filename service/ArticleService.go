@@ -102,21 +102,21 @@ func putArticleWithRandomId(article *model.Article) error {
 
 func GetArticles(offset, limit int, author, tag, favorited string) ([]model.Article, error) {
 	if offset < 0 {
-		return nil, util.NewInputError("offset", "must be non-negative")
+		return nil, model.NewInputError("offset", "must be non-negative")
 	}
 
 	if limit <= 0 {
-		return nil, util.NewInputError("limit", "must be positive")
+		return nil, model.NewInputError("limit", "must be positive")
 	}
 
 	const maxDepth = 1000
 	if offset+limit > maxDepth {
-		return nil, util.NewInputError("offset + limit", fmt.Sprintf("must be smaller or equal to %d", maxDepth))
+		return nil, model.NewInputError("offset + limit", fmt.Sprintf("must be smaller or equal to %d", maxDepth))
 	}
 
 	numFilters := getNumFilters(author, tag, favorited)
 	if numFilters > 1 {
-		return nil, util.NewInputError("author, tag, favorited", "only one of these can be specified")
+		return nil, model.NewInputError("author, tag, favorited", "only one of these can be specified")
 	}
 
 	if numFilters == 0 {
@@ -308,7 +308,7 @@ func GetArticleByArticleId(articleId int64) (model.Article, error) {
 	}
 
 	if !found {
-		return model.Article{}, util.NewInputError("slug", "not found")
+		return model.Article{}, model.NewInputError("slug", "not found")
 	}
 
 	return article, nil

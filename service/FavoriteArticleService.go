@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
-	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
 func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int64, error) {
@@ -128,7 +127,7 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 	})
 
 	if err != nil {
-		return util.NewInputError("slug", "not found or already favorited")
+		return model.NewInputError("slug", "not found or already favorited")
 	}
 
 	return nil
@@ -167,7 +166,7 @@ func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
 	})
 
 	if err != nil {
-		return util.NewInputError("slug", "not found or not favorited")
+		return model.NewInputError("slug", "not found or not favorited")
 	}
 
 	return nil

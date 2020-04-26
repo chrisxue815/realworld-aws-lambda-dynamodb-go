@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
-)
-
 const MaxCommentId = 0x1000000 // exclusive
 
 type CommentKey struct {
@@ -21,7 +17,7 @@ type Comment struct {
 
 func (comment *Comment) Validate() error {
 	if comment.Body == "" {
-		return util.NewInputError("body", "can't be blank")
+		return NewInputError("body", "can't be blank")
 	}
 
 	return nil
