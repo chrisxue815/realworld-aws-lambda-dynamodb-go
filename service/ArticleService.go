@@ -53,7 +53,7 @@ func putArticleWithRandomId(article *model.Article) error {
 	// Put a new article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Put: &dynamodb.Put{
-			TableName:           aws.String(ArticleTableName.Get()),
+			TableName:           aws.String(ArticleTableName),
 			Item:                articleItem,
 			ConditionExpression: aws.String("attribute_not_exists(ArticleId)"),
 		},
@@ -74,7 +74,7 @@ func putArticleWithRandomId(article *model.Article) error {
 		// Link article with tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Put: &dynamodb.Put{
-				TableName: aws.String(ArticleTagTableName.Get()),
+				TableName: aws.String(ArticleTagTableName),
 				Item:      item,
 			},
 		})
@@ -82,7 +82,7 @@ func putArticleWithRandomId(article *model.Article) error {
 		// Update article count for each tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:        aws.String(TagTableName.Get()),
+				TableName:        aws.String(TagTableName),
 				Key:              StringKey("Tag", tag),
 				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
 				ExpressionAttributeValues: AWSObject{
@@ -154,7 +154,7 @@ func getNumFilters(author, tag, favorited string) int {
 
 func getAllArticles(offset, limit int) ([]model.Article, error) {
 	queryArticles := dynamodb.QueryInput{
-		TableName:                 aws.String(ArticleTableName.Get()),
+		TableName:                 aws.String(ArticleTableName),
 		IndexName:                 aws.String("CreatedAt"),
 		KeyConditionExpression:    aws.String("Dummy=:zero"),
 		ExpressionAttributeValues: IntKey(":zero", 0),
@@ -178,7 +178,7 @@ func getAllArticles(offset, limit int) ([]model.Article, error) {
 
 func getArticlesByAuthor(author string, offset, limit int) ([]model.Article, error) {
 	queryArticles := dynamodb.QueryInput{
-		TableName:                 aws.String(ArticleTableName.Get()),
+		TableName:                 aws.String(ArticleTableName),
 		IndexName:                 aws.String("Author"),
 		KeyConditionExpression:    aws.String("Author=:author"),
 		ExpressionAttributeValues: StringKey(":author", author),
@@ -230,7 +230,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 
 	batchGetArticles := dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
-			ArticleTableName.Get(): {
+			ArticleTableName: {
 				Keys: keys,
 			},
 		},
@@ -301,7 +301,7 @@ func GetArticleBySlug(slug string) (model.Article, error) {
 
 func GetArticleByArticleId(articleId int64) (model.Article, error) {
 	article := model.Article{}
-	found, err := GetItemByKey(ArticleTableName.Get(), Int64Key("ArticleId", articleId), &article)
+	found, err := GetItemByKey(ArticleTableName, Int64Key("ArticleId", articleId), &article)
 
 	if err != nil {
 		return model.Article{}, err
@@ -342,7 +342,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 	// Update article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName:                 aws.String(ArticleTableName.Get()),
+			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", oldArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
 			UpdateExpression:          expr.Update(),
@@ -355,7 +355,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		// Unlink article from tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Delete: &dynamodb.Delete{
-				TableName: aws.String(ArticleTagTableName.Get()),
+				TableName: aws.String(ArticleTagTableName),
 				Key: AWSObject{
 					"Tag":       StringValue(tag),
 					"ArticleId": Int64Value(oldArticle.ArticleId),
@@ -366,7 +366,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		// Update article count for each tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:                 aws.String(TagTableName.Get()),
+				TableName:                 aws.String(TagTableName),
 				Key:                       StringKey("Tag", tag),
 				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
 				ExpressionAttributeValues: IntKey(":minus_one", -1),
@@ -394,7 +394,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		//   There's a small chance for both requests to get through, leading to inconsistent result A B D
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Put: &dynamodb.Put{
-				TableName: aws.String(ArticleTagTableName.Get()),
+				TableName: aws.String(ArticleTagTableName),
 				Item:      item,
 			},
 		})
@@ -402,7 +402,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		// Update article count for each tag
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:        aws.String(TagTableName.Get()),
+				TableName:        aws.String(TagTableName),
 				Key:              StringKey("Tag", tag),
 				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
 				ExpressionAttributeValues: AWSObject{
@@ -468,7 +468,7 @@ func DeleteArticle(slug string, username string) error {
 
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Delete: &dynamodb.Delete{
-			TableName:                 aws.String(ArticleTableName.Get()),
+			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", article.ArticleId),
 			ConditionExpression:       aws.String("Author=:username"),
 			ExpressionAttributeValues: StringKey(":username", username),
@@ -483,7 +483,7 @@ func DeleteArticle(slug string, username string) error {
 	for _, tag := range article.TagList {
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Delete: &dynamodb.Delete{
-				TableName: aws.String(ArticleTagTableName.Get()),
+				TableName: aws.String(ArticleTagTableName),
 				Key: AWSObject{
 					"Tag":       StringValue(tag),
 					"ArticleId": Int64Value(article.ArticleId),
@@ -493,7 +493,7 @@ func DeleteArticle(slug string, username string) error {
 
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Update: &dynamodb.Update{
-				TableName:                 aws.String(TagTableName.Get()),
+				TableName:                 aws.String(TagTableName),
 				Key:                       StringKey("Tag", tag),
 				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
 				ExpressionAttributeValues: IntKey(":minus_one", -1),
@@ -513,7 +513,7 @@ func DeleteArticle(slug string, username string) error {
 
 func GetFeed(username string, offset, limit int) ([]model.Article, error) {
 	queryPublishers := dynamodb.QueryInput{
-		TableName:                 aws.String(FollowTableName.Get()),
+		TableName:                 aws.String(FollowTableName),
 		KeyConditionExpression:    aws.String("Follower=:username"),
 		ExpressionAttributeValues: StringKey(":username", username),
 		ProjectionExpression:      aws.String("Publisher"),

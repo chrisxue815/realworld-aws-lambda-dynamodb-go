@@ -9,7 +9,7 @@ import (
 
 func GetArticleIdsByTag(tag string, offset, limit int) ([]int64, error) {
 	queryArticleIds := dynamodb.QueryInput{
-		TableName:                 aws.String(ArticleTagTableName.Get()),
+		TableName:                 aws.String(ArticleTagTableName),
 		IndexName:                 aws.String("CreatedAt"),
 		KeyConditionExpression:    aws.String("Tag=:tag"),
 		ExpressionAttributeValues: StringKey(":tag", tag),

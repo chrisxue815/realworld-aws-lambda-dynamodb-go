@@ -27,7 +27,7 @@ func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
 
 	batchGetFollows := dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
-			FollowTableName.Get(): {
+			FollowTableName: {
 				Keys:                 keys,
 				ProjectionExpression: aws.String("Publisher"),
 			},
@@ -75,7 +75,7 @@ func Follow(follower string, publisher string) error {
 	}
 
 	putFollow := dynamodb.PutItemInput{
-		TableName: aws.String(FollowTableName.Get()),
+		TableName: aws.String(FollowTableName),
 		Item:      item,
 	}
 
@@ -96,7 +96,7 @@ func Unfollow(follower string, publisher string) error {
 	}
 
 	deleteFollow := dynamodb.DeleteItemInput{
-		TableName: aws.String(FollowTableName.Get()),
+		TableName: aws.String(FollowTableName),
 		Key:       item,
 	}
 

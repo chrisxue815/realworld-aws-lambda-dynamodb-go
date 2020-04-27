@@ -9,7 +9,7 @@ import (
 
 func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int64, error) {
 	queryArticleIds := dynamodb.QueryInput{
-		TableName:                 aws.String(FavoriteArticleTableName.Get()),
+		TableName:                 aws.String(FavoriteArticleTableName),
 		IndexName:                 aws.String("FavoritedAt"),
 		KeyConditionExpression:    aws.String("Username=:username"),
 		ExpressionAttributeValues: StringKey(":username", username),
@@ -53,7 +53,7 @@ func IsArticleFavoritedByUser(user *model.User, articles []model.Article) ([]boo
 
 	batchGetFavoriteArticles := dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
-			FavoriteArticleTableName.Get(): {
+			FavoriteArticleTableName: {
 				Keys:                 keys,
 				ProjectionExpression: aws.String("ArticleId"),
 			},
@@ -105,7 +105,7 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 	// Favorite the article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Put: &dynamodb.Put{
-			TableName:           aws.String(FavoriteArticleTableName.Get()),
+			TableName:           aws.String(FavoriteArticleTableName),
 			Item:                item,
 			ConditionExpression: aws.String("attribute_not_exists(Username) AND attribute_not_exists(ArticleId)"),
 		},
@@ -114,7 +114,7 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 	// Update favorites count
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName:                 aws.String(ArticleTableName.Get()),
+			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
 			UpdateExpression:          aws.String("ADD FavoritesCount :one"),
@@ -144,7 +144,7 @@ func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
 	// Unfavorite the article
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Delete: &dynamodb.Delete{
-			TableName:           aws.String(FavoriteArticleTableName.Get()),
+			TableName:           aws.String(FavoriteArticleTableName),
 			Key:                 item,
 			ConditionExpression: aws.String("attribute_exists(Username) AND attribute_exists(ArticleId)"),
 		},
@@ -153,7 +153,7 @@ func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
 	// Update favorites count
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName:                 aws.String(ArticleTableName.Get()),
+			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
 			UpdateExpression:          aws.String("ADD FavoritesCount :minus_one"),

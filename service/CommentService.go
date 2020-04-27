@@ -45,7 +45,7 @@ func putCommentWithRandomId(comment *model.Comment) error {
 
 	// Put a new article
 	_, err = DynamoDB().PutItem(&dynamodb.PutItemInput{
-		TableName:           aws.String(CommentTableName.Get()),
+		TableName:           aws.String(CommentTableName),
 		Item:                commentItem,
 		ConditionExpression: aws.String("attribute_not_exists(CommentId)"),
 	})
@@ -79,7 +79,7 @@ func GetComments(slug string) ([]model.Comment, error) {
 	}
 
 	queryComments := dynamodb.QueryInput{
-		TableName:                 aws.String(CommentTableName.Get()),
+		TableName:                 aws.String(CommentTableName),
 		IndexName:                 aws.String("CreatedAt"),
 		KeyConditionExpression:    aws.String("ArticleId=:articleId"),
 		ExpressionAttributeValues: Int64Key(":articleId", articleId),
@@ -118,7 +118,7 @@ func DeleteComment(slug string, commentId int64, username string) error {
 	}
 
 	deleteComment := dynamodb.DeleteItemInput{
-		TableName:                 aws.String(CommentTableName.Get()),
+		TableName:                 aws.String(CommentTableName),
 		Key:                       item,
 		ConditionExpression:       aws.String("Author=:username"),
 		ExpressionAttributeValues: StringKey(":username", username),

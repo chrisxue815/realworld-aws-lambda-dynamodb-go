@@ -11,7 +11,7 @@ func GetTags() ([]string, error) {
 	const maxNumTags = 20
 
 	queryTags := dynamodb.QueryInput{
-		TableName:                 aws.String(TagTableName.Get()),
+		TableName:                 aws.String(TagTableName),
 		IndexName:                 aws.String("ArticleCount"),
 		KeyConditionExpression:    aws.String("Dummy=:zero"),
 		ExpressionAttributeValues: IntKey(":zero", 0),

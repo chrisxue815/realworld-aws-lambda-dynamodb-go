@@ -35,14 +35,14 @@ func PutUser(user model.User) error {
 		TransactItems: []*dynamodb.TransactWriteItem{
 			{
 				Put: &dynamodb.Put{
-					TableName:           aws.String(UserTableName.Get()),
+					TableName:           aws.String(UserTableName),
 					Item:                userItem,
 					ConditionExpression: aws.String("attribute_not_exists(Username)"),
 				},
 			},
 			{
 				Put: &dynamodb.Put{
-					TableName:           aws.String(EmailUserTableName.Get()),
+					TableName:           aws.String(EmailUserTableName),
 					Item:                emailUserItem,
 					ConditionExpression: aws.String("attribute_not_exists(Email)"),
 				},
@@ -83,7 +83,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		// Link user with the new email
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Put: &dynamodb.Put{
-				TableName:           aws.String(EmailUserTableName.Get()),
+				TableName:           aws.String(EmailUserTableName),
 				Item:                emailUserItem,
 				ConditionExpression: aws.String("attribute_not_exists(Email)"),
 			},
@@ -92,7 +92,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		// Unlink user from the old email
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Delete: &dynamodb.Delete{
-				TableName:           aws.String(EmailUserTableName.Get()),
+				TableName:           aws.String(EmailUserTableName),
 				Key:                 StringKey("Email", oldUser.Email),
 				ConditionExpression: aws.String("attribute_exists(Email)"),
 			},
@@ -112,7 +112,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 	// Update user info
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 		Update: &dynamodb.Update{
-			TableName:                 aws.String(UserTableName.Get()),
+			TableName:                 aws.String(UserTableName),
 			Key:                       StringKey("Username", oldUser.Username),
 			ConditionExpression:       aws.String("attribute_exists(Username)"),
 			UpdateExpression:          expr.Update(),
@@ -185,7 +185,7 @@ func GetUserByEmail(email string) (model.User, error) {
 
 func GetUsernameByEmail(email string) (string, error) {
 	emailUser := model.EmailUser{}
-	found, err := GetItemByKey(EmailUserTableName.Get(), StringKey("Email", email), &emailUser)
+	found, err := GetItemByKey(EmailUserTableName, StringKey("Email", email), &emailUser)
 
 	if err != nil {
 		return "", err
@@ -200,7 +200,7 @@ func GetUsernameByEmail(email string) (string, error) {
 
 func GetUserByUsername(username string) (model.User, error) {
 	user := model.User{}
-	found, err := GetItemByKey(UserTableName.Get(), StringKey("Username", username), &user)
+	found, err := GetItemByKey(UserTableName, StringKey("Username", username), &user)
 
 	if err != nil {
 		return model.User{}, err
@@ -244,7 +244,7 @@ func GetUserListByUsername(usernames []string) ([]model.User, error) {
 
 	batchGetUsers := dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
-			UserTableName.Get(): {
+			UserTableName: {
 				Keys: keys,
 			},
 		},
