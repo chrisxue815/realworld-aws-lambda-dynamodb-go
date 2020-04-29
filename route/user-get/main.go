@@ -7,7 +7,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-type ResponseBody struct {
+type Response struct {
 	User UserResponse `json:"user"`
 }
 
@@ -19,13 +19,13 @@ type UserResponse struct {
 	Token    string `json:"token"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, token, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, token, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		User: UserResponse{
 			Username: user.Username,
 			Email:    user.Email,
@@ -35,7 +35,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type ResponseBody struct {
+type Response struct {
 	Article ArticleResponse `json:"article"`
 }
 
@@ -33,13 +33,13 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	articleId, err := model.SlugToArticleId(request.PathParameters["slug"])
+	articleId, err := model.SlugToArticleId(input.PathParameters["slug"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -67,7 +67,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Article: ArticleResponse{
 			Slug:           article.Slug,
 			Title:          article.Title,
@@ -87,7 +87,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

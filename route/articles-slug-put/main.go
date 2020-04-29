@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type RequestBody struct {
+type Request struct {
 	Article ArticleRequest `json:"article"`
 }
 
@@ -21,7 +21,7 @@ type ArticleRequest struct {
 	TagList     []string `json:"tagList"`
 }
 
-type ResponseBody struct {
+type Response struct {
 	Article ArticleResponse `json:"article"`
 }
 
@@ -45,24 +45,24 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	requestBody := RequestBody{}
-	err = json.Unmarshal([]byte(request.Body), &requestBody)
+	request := Request{}
+	err = json.Unmarshal([]byte(input.Body), &request)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	oldArticle, err := service.GetArticleBySlug(request.PathParameters["slug"])
+	oldArticle, err := service.GetArticleBySlug(input.PathParameters["slug"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	newArticle := createNewArticle(requestBody, oldArticle)
+	newArticle := createNewArticle(request, oldArticle)
 
 	err = service.UpdateArticle(oldArticle, &newArticle)
 	if err != nil {
@@ -74,7 +74,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Article: ArticleResponse{
 			Slug:           newArticle.Slug,
 			Title:          newArticle.Title,
@@ -94,16 +94,16 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
-func createNewArticle(requestBody RequestBody, oldArticle model.Article) model.Article {
+func createNewArticle(request Request, oldArticle model.Article) model.Article {
 	newArticle := model.Article{
 		ArticleId:      oldArticle.ArticleId,
-		Title:          requestBody.Article.Title,
-		Description:    requestBody.Article.Description,
-		Body:           requestBody.Article.Body,
-		TagList:        requestBody.Article.TagList,
+		Title:          request.Article.Title,
+		Description:    request.Article.Description,
+		Body:           request.Article.Body,
+		TagList:        request.Article.TagList,
 		CreatedAt:      oldArticle.CreatedAt,
 		UpdatedAt:      time.Now().UTC().UnixNano(),
 		FavoritesCount: oldArticle.FavoritesCount,

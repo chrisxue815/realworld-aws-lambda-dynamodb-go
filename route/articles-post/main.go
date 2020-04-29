@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type RequestBody struct {
+type Request struct {
 	Article ArticleRequest `json:"article"`
 }
 
@@ -21,7 +21,7 @@ type ArticleRequest struct {
 	TagList     []string `json:"tagList"`
 }
 
-type ResponseBody struct {
+type Response struct {
 	Article ArticleResponse `json:"article"`
 }
 
@@ -45,14 +45,14 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	requestBody := RequestBody{}
-	err = json.Unmarshal([]byte(request.Body), &requestBody)
+	request := Request{}
+	err = json.Unmarshal([]byte(input.Body), &request)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -62,10 +62,10 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 	nowStr := now.Format(model.TimestampFormat)
 
 	article := model.Article{
-		Title:       requestBody.Article.Title,
-		Description: requestBody.Article.Description,
-		Body:        requestBody.Article.Body,
-		TagList:     requestBody.Article.TagList,
+		Title:       request.Article.Title,
+		Description: request.Article.Description,
+		Body:        request.Article.Body,
+		TagList:     request.Article.TagList,
 		CreatedAt:   nowUnixNano,
 		UpdatedAt:   nowUnixNano,
 		Author:      user.Username,
@@ -76,12 +76,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Article: ArticleResponse{
 			Title:          article.Title,
 			Description:    article.Description,
 			Body:           article.Body,
-			TagList:        requestBody.Article.TagList,
+			TagList:        request.Article.TagList,
 			Slug:           article.Slug,
 			CreatedAt:      nowStr,
 			UpdatedAt:      nowStr,
@@ -96,7 +96,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(201, responseBody)
+	return util.NewSuccessResponse(201, response)
 }
 
 func main() {

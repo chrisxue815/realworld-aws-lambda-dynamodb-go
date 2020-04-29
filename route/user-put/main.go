@@ -9,7 +9,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-type RequestBody struct {
+type Request struct {
 	User UserRequest `json:"user"`
 }
 
@@ -20,7 +20,7 @@ type UserRequest struct {
 	Bio      string `json:"bio"`
 }
 
-type ResponseBody struct {
+type Response struct {
 	User UserResponse `json:"user"`
 }
 
@@ -32,34 +32,34 @@ type UserResponse struct {
 	Token    string `json:"token"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	oldUser, token, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	oldUser, token, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	requestBody := RequestBody{}
-	err = json.Unmarshal([]byte(request.Body), &requestBody)
+	request := Request{}
+	err = json.Unmarshal([]byte(input.Body), &request)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	err = model.ValidatePassword(requestBody.User.Password)
+	err = model.ValidatePassword(request.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	passwordHash, err := model.Scrypt(requestBody.User.Password)
+	passwordHash, err := model.Scrypt(request.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
 	newUser := model.User{
 		Username:     oldUser.Username,
-		Email:        requestBody.User.Email,
+		Email:        request.User.Email,
 		PasswordHash: passwordHash,
-		Image:        requestBody.User.Image,
-		Bio:          requestBody.User.Bio,
+		Image:        request.User.Image,
+		Bio:          request.User.Bio,
 	}
 
 	err = service.UpdateUser(*oldUser, newUser)
@@ -67,7 +67,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		User: UserResponse{
 			Username: newUser.Username,
 			Email:    newUser.Email,
@@ -77,7 +77,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

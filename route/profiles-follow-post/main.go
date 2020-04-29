@@ -7,7 +7,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-type ResponseBody struct {
+type Response struct {
 	Profile ProfileResponse `json:"profile"`
 }
 
@@ -18,13 +18,13 @@ type ProfileResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	publisher, err := service.GetUserByUsername(request.PathParameters["username"])
+	publisher, err := service.GetUserByUsername(input.PathParameters["username"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -34,7 +34,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Profile: ProfileResponse{
 			Username:  publisher.Username,
 			Image:     publisher.Image,
@@ -43,7 +43,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

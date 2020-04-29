@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type RequestBody struct {
+type Request struct {
 	Comment CommentRequest `json:"comment"`
 }
 
@@ -18,7 +18,7 @@ type CommentRequest struct {
 	Body string `json:"body"`
 }
 
-type ResponseBody struct {
+type Response struct {
 	Comment CommentResponse `json:"comment"`
 }
 
@@ -37,20 +37,20 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	requestBody := RequestBody{}
-	err = json.Unmarshal([]byte(request.Body), &requestBody)
+	request := Request{}
+	err = json.Unmarshal([]byte(input.Body), &request)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
 	// Make sure article exists, at least at this point
-	article, err := service.GetArticleBySlug(request.PathParameters["slug"])
+	article, err := service.GetArticleBySlug(input.PathParameters["slug"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -65,7 +65,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 		CreatedAt: nowUnixNano,
 		UpdatedAt: nowUnixNano,
-		Body:      requestBody.Comment.Body,
+		Body:      request.Comment.Body,
 		Author:    user.Username,
 	}
 
@@ -74,7 +74,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Comment: CommentResponse{
 			Id:        comment.CommentId,
 			Body:      comment.Body,
@@ -89,7 +89,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

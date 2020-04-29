@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type ResponseBody struct {
+type Response struct {
 	Articles      []ArticleResponse `json:"articles"`
 	ArticlesCount int               `json:"articlesCount"`
 }
@@ -35,18 +35,18 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	offset, err := strconv.Atoi(request.QueryStringParameters["offset"])
+	offset, err := strconv.Atoi(input.QueryStringParameters["offset"])
 	if err != nil {
 		offset = 0
 	}
 
-	limit, err := strconv.Atoi(request.QueryStringParameters["limit"])
+	limit, err := strconv.Atoi(input.QueryStringParameters["limit"])
 	if err != nil {
 		limit = 20
 	}
@@ -83,12 +83,12 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		})
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Articles:      articleResponses,
 		ArticlesCount: len(articleResponses),
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

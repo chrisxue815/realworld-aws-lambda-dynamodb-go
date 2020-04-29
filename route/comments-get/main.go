@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type ResponseBody struct {
+type Response struct {
 	Comments []CommentResponse `json:"comments"`
 }
 
@@ -28,10 +28,10 @@ type AuthorResponse struct {
 	Following bool   `json:"following"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, _ := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, _ := service.GetCurrentUser(input.Headers["Authorization"])
 
-	comments, err := service.GetComments(request.PathParameters["slug"])
+	comments, err := service.GetComments(input.PathParameters["slug"])
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
@@ -58,11 +58,11 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		})
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Comments: commentResponses,
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

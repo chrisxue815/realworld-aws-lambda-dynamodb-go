@@ -7,13 +7,13 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	err = service.DeleteArticle(request.PathParameters["slug"], user.Username)
+	err = service.DeleteArticle(input.PathParameters["slug"], user.Username)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-type RequestBody struct {
+type Request struct {
 	User UserRequest `json:"user"`
 }
 
@@ -19,7 +19,7 @@ type UserRequest struct {
 	Password string `json:"password"`
 }
 
-type ResponseBody struct {
+type Response struct {
 	User UserResponse `json:"user"`
 }
 
@@ -31,26 +31,26 @@ type UserResponse struct {
 	Token    string `json:"token"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	requestBody := RequestBody{}
-	err := json.Unmarshal([]byte(request.Body), &requestBody)
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	request := Request{}
+	err := json.Unmarshal([]byte(input.Body), &request)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	err = model.ValidatePassword(requestBody.User.Password)
+	err = model.ValidatePassword(request.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	passwordHash, err := model.Scrypt(requestBody.User.Password)
+	passwordHash, err := model.Scrypt(request.User.Password)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
 	user := model.User{
-		Username:     requestBody.User.Username,
-		Email:        requestBody.User.Email,
+		Username:     request.User.Username,
+		Email:        request.User.Email,
 		PasswordHash: passwordHash,
 	}
 
@@ -64,7 +64,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		User: UserResponse{
 			Username: user.Username,
 			Email:    user.Email,
@@ -74,7 +74,7 @@ func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespon
 		},
 	}
 
-	return util.NewSuccessResponse(201, responseBody)
+	return util.NewSuccessResponse(201, response)
 }
 
 func main() {

@@ -7,21 +7,21 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
-type ResponseBody struct {
+type Response struct {
 	Tags []string `json:"tags"`
 }
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	tags, err := service.GetTags()
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
 
-	responseBody := ResponseBody{
+	response := Response{
 		Tags: tags,
 	}
 
-	return util.NewSuccessResponse(200, responseBody)
+	return util.NewSuccessResponse(200, response)
 }
 
 func main() {

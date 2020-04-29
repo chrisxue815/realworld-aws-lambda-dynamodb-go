@@ -9,18 +9,18 @@ import (
 	"strconv"
 )
 
-func Handle(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	user, _, err := service.GetCurrentUser(request.Headers["Authorization"])
+func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	user, _, err := service.GetCurrentUser(input.Headers["Authorization"])
 	if err != nil {
 		return util.NewUnauthorizedResponse()
 	}
 
-	commentId, err := strconv.ParseInt(request.PathParameters["id"], 10, 64)
+	commentId, err := strconv.ParseInt(input.PathParameters["id"], 10, 64)
 	if err != nil {
 		return util.NewErrorResponse(model.NewInputError("id", "invalid"))
 	}
 
-	err = service.DeleteComment(request.PathParameters["slug"], commentId, user.Username)
+	err = service.DeleteComment(input.PathParameters["slug"], commentId, user.Username)
 	if err != nil {
 		return util.NewErrorResponse(err)
 	}
