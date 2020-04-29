@@ -176,10 +176,6 @@ func GetUserByEmail(email string) (model.User, error) {
 		return model.User{}, err
 	}
 
-	if username == "" {
-		return model.User{}, model.NewInputError("email", "not found")
-	}
-
 	return GetUserByUsername(username)
 }
 
@@ -199,6 +195,10 @@ func GetUsernameByEmail(email string) (string, error) {
 }
 
 func GetUserByUsername(username string) (model.User, error) {
+	if username == "" {
+		return model.User{}, model.NewInputError("username", "can't be blank")
+	}
+
 	user := model.User{}
 	found, err := GetItemByKey(UserTableName, StringKey("Username", username), &user)
 

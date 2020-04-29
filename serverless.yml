@@ -5,9 +5,10 @@ frameworkVersion: '>=1.28.0 <2.0.0'
 provider:
   name: aws
   runtime: go1.x
+  stage: ${opt:stage, "dev"}
   region: ${opt:region, "eu-west-1"}
   environment:
-    STAGE: ${opt:stage, "dev"}
+    STAGE: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -17,7 +18,7 @@ provider:
         - dynamodb:PutItem
         - dynamodb:Query
         - dynamodb:UpdateItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/*"
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/*"
 
 package:
   exclude:
@@ -229,7 +230,7 @@ resources:
     UserTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-user
+        TableName: realworld-${self:provider.stage}-user
         AttributeDefinitions:
           - AttributeName: Username
             AttributeType: S
@@ -244,7 +245,7 @@ resources:
     EmailUserTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-email-user
+        TableName: realworld-${self:provider.stage}-email-user
         AttributeDefinitions:
           - AttributeName: Email
             AttributeType: S
@@ -259,7 +260,7 @@ resources:
     FollowTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-follow
+        TableName: realworld-${self:provider.stage}-follow
         AttributeDefinitions:
           - AttributeName: Follower
             AttributeType: S
@@ -278,7 +279,7 @@ resources:
     ArticleTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-article
+        TableName: realworld-${self:provider.stage}-article
         AttributeDefinitions:
           - AttributeName: ArticleId
             AttributeType: N
@@ -322,7 +323,7 @@ resources:
     ArticleTagTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-article-tag
+        TableName: realworld-${self:provider.stage}-article-tag
         AttributeDefinitions:
           - AttributeName: Tag
             AttributeType: S
@@ -352,7 +353,7 @@ resources:
     TagTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-tag
+        TableName: realworld-${self:provider.stage}-tag
         AttributeDefinitions:
           - AttributeName: Tag
             AttributeType: S
@@ -383,7 +384,7 @@ resources:
     FavoriteArticleTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-favorite-article
+        TableName: realworld-${self:provider.stage}-favorite-article
         AttributeDefinitions:
           - AttributeName: Username
             AttributeType: S
@@ -413,7 +414,7 @@ resources:
     CommentTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: realworld-${self:provider.environment.STAGE}-comment
+        TableName: realworld-${self:provider.stage}-comment
         AttributeDefinitions:
           - AttributeName: ArticleId
             AttributeType: N

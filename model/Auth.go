@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-const TokenExpirationDay = 60
+const TokenExpirationDays = 60
 
 var passwordSalt = []byte("KU2YVXA7BSNExJIvemcdz61eL86IJDCC")
-var jwtSecret = []byte("C92cw5od80NCWIvu4NZ8AKp5NyTbnBmG")
+var jwtSecret = []byte("C92cw5od80NCWIvu4NZ8AKp5NyTbnBmG") // TODO: Generate random secrets and store in DynamoDB
 
 func Scrypt(password string) ([]byte, error) {
 	// https://godoc.org/golang.org/x/crypto/scrypt
@@ -25,7 +25,7 @@ func Scrypt(password string) ([]byte, error) {
 
 func GenerateToken(username string) (string, error) {
 	now := time.Now().UTC()
-	exp := now.AddDate(0, 0, TokenExpirationDay).Unix()
+	exp := now.AddDate(0, 0, TokenExpirationDays).Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": username,
@@ -38,11 +38,10 @@ func GenerateToken(username string) (string, error) {
 func VerifyAuthorization(auth string) (string, string, error) {
 	parts := strings.SplitN(auth, " ", 2)
 	if len(parts) != 2 || parts[0] != "Token" {
-		return "", "", NewInputError("Authorization", "invalid")
+		return "", "", NewInputError("Authorization", "invalid format")
 	}
 
 	token := parts[1]
-
 	username, err := VerifyToken(token)
 	return username, token, err
 }
