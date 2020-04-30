@@ -67,24 +67,24 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		return err
 	}
 
-	emailUser := model.EmailUser{
-		Email:    newUser.Email,
-		Username: newUser.Username,
-	}
-
-	emailUserItem, err := dynamodbattribute.MarshalMap(emailUser)
-	if err != nil {
-		return err
-	}
-
 	transactItems := make([]*dynamodb.TransactWriteItem, 0, 3)
 
 	if oldUser.Email != newUser.Email {
+		newEmailUser := model.EmailUser{
+			Email:    newUser.Email,
+			Username: newUser.Username,
+		}
+
+		newEmailUserItem, err := dynamodbattribute.MarshalMap(newEmailUser)
+		if err != nil {
+			return err
+		}
+
 		// Link user with the new email
 		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
 			Put: &dynamodb.Put{
 				TableName:           aws.String(EmailUserTableName),
-				Item:                emailUserItem,
+				Item:                newEmailUserItem,
 				ConditionExpression: aws.String("attribute_not_exists(Email)"),
 			},
 		})
