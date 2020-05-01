@@ -7,21 +7,21 @@ import (
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
-func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
-	if user == nil || len(usernames) == 0 {
-		return make([]bool, len(usernames)), nil
+func IsFollowing(follower *model.User, publishers []string) ([]bool, error) {
+	if follower == nil || len(publishers) == 0 {
+		return make([]bool, len(publishers)), nil
 	}
 
-	usernameSet := make(map[string]bool)
-	for _, username := range usernames {
-		usernameSet[username] = true
+	publisherSet := make(map[string]bool)
+	for _, publisher := range publishers {
+		publisherSet[publisher] = true
 	}
 
-	keys := make([]AWSObject, 0, len(usernameSet))
-	for author := range usernameSet {
+	keys := make([]AWSObject, 0, len(publisherSet))
+	for publisher := range publisherSet {
 		keys = append(keys, AWSObject{
-			"Follower":  StringValue(user.Username),
-			"Publisher": StringValue(author),
+			"Follower":  StringValue(follower.Username),
+			"Publisher": StringValue(publisher),
 		})
 	}
 
@@ -34,7 +34,7 @@ func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
 		},
 	}
 
-	responses, err := BatchGetItems(&batchGetFollows, len(usernameSet))
+	responses, err := BatchGetItems(&batchGetFollows, len(publisherSet))
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,8 @@ func IsFollowing(user *model.User, usernames []string) ([]bool, error) {
 		}
 	}
 
-	following := make([]bool, 0, len(usernames))
-	for _, username := range usernames {
+	following := make([]bool, 0, len(publishers))
+	for _, username := range publishers {
 		following = append(following, followingUser[username])
 	}
 
