@@ -1,11 +1,9 @@
 package service
 
 import (
-	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -99,25 +97,18 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		})
 	}
 
-	expr, err := buildUserUpdateExpression(oldUser, newUser)
+	newUserItem, err := dynamodbattribute.MarshalMap(newUser)
 	if err != nil {
 		return err
 	}
 
-	// No field changed
-	if expr.Update() == nil {
-		return nil
-	}
-
 	// Update user info
 	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Update: &dynamodb.Update{
+		Put: &dynamodb.Put{
 			TableName:                 aws.String(UserTableName),
-			Key:                       StringKey("Username", oldUser.Username),
-			ConditionExpression:       aws.String("attribute_exists(Username)"),
-			UpdateExpression:          expr.Update(),
-			ExpressionAttributeNames:  expr.Names(),
-			ExpressionAttributeValues: expr.Values(),
+			Item:                      newUserItem,
+			ConditionExpression:       aws.String("Email = :email"),
+			ExpressionAttributeValues: StringKey(":email", oldUser.Email),
 		},
 	})
 
@@ -129,41 +120,6 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 	}
 
 	return nil
-}
-
-func buildUserUpdateExpression(oldUser model.User, newUser model.User) (expression.Expression, error) {
-	update := expression.UpdateBuilder{}
-
-	if oldUser.Email != newUser.Email {
-		update = update.Set(expression.Name("Email"), expression.Value(newUser.Email))
-	}
-
-	if newUser.PasswordHash != nil && !bytes.Equal(oldUser.PasswordHash, newUser.PasswordHash) {
-		update = update.Set(expression.Name("PasswordHash"), expression.Value(newUser.PasswordHash))
-	}
-
-	if oldUser.Image != newUser.Image {
-		if newUser.Image != "" {
-			update = update.Set(expression.Name("Image"), expression.Value(newUser.Image))
-		} else {
-			update = update.Remove(expression.Name("Image"))
-		}
-	}
-
-	if oldUser.Bio != newUser.Bio {
-		if newUser.Bio != "" {
-			update = update.Set(expression.Name("Bio"), expression.Value(newUser.Bio))
-		} else {
-			update = update.Remove(expression.Name("Bio"))
-		}
-	}
-
-	if IsUpdateBuilderEmpty(update) {
-		return expression.Expression{}, nil
-	}
-
-	builder := expression.NewBuilder().WithUpdate(update)
-	return builder.Build()
 }
 
 func GetUserByEmail(email string) (model.User, error) {
