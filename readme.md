@@ -16,7 +16,7 @@ For more information on how to this works with other frontends/backends, head ov
 
 ## Prerequisite
 
-* Install Go, Node.js, Serverless CLI
+* Install Go, Node.js, Serverless CLI, AWS CLI
 * In `angularjs-realworld-example-app`, run `npm install`
 
 ## Build and deploy backend
@@ -49,14 +49,14 @@ For example, the following section means `POST /users` is handled by `bin/users-
 ```
 
 # Design choices
-* Scrypt-based password hasing
+* Scrypt-based password hashing
 * Input validation
 * Data consistency with DynamoDB transactions
 
 These tradeoffs were made for simpler code:
-* Hardcoded secret. Cons: can't invalidate tokens
-* Shared states (like DB and RNG) are singletons, no dependency injections used. Cons: can't control their lifecycles, potential memory leak, unit-test-unfriendly
-* Usernames can't be changed
+* Hardcoded Scrypt secret. Downside: tokens can't be invalidated
+* Shared states (like DB and RNG) are singletons, no dependency injections used. Downside: lifecycles of shared states are not controllable. Potential memory leak. Unit-test-unfriendly
+* Usernames are not changeable
 * Usernames are case-sensitive
-* Performance bottlenecks around global secondary indices with a single hash-key value, like ArticleTable.CreatedAt and TagTable.ArticleCount
-* Performance bottlenecks around fan-in-based article feed aggregation
+* Performance bottleneck in global secondary indices with a single hash-key value, like ArticleTable.CreatedAt and TagTable.ArticleCount
+* Performance bottleneck in fan-in-based article feed aggregation
