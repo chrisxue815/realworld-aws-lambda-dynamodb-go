@@ -65,7 +65,7 @@ func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse
 		Title:       request.Article.Title,
 		Description: request.Article.Description,
 		Body:        request.Article.Body,
-		TagList:     request.Article.TagList,
+		TagList:     request.Article.TagList, // TODO .distinct()
 		CreatedAt:   nowUnixNano,
 		UpdatedAt:   nowUnixNano,
 		Author:      user.Username,
@@ -78,11 +78,11 @@ func Handle(input events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse
 
 	response := Response{
 		Article: ArticleResponse{
+			Slug:           article.Slug,
 			Title:          article.Title,
 			Description:    article.Description,
 			Body:           article.Body,
-			TagList:        request.Article.TagList,
-			Slug:           article.Slug,
+			TagList:        article.TagList,
 			CreatedAt:      nowStr,
 			UpdatedAt:      nowStr,
 			Favorited:      false,

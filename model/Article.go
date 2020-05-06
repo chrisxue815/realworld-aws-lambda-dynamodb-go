@@ -22,7 +22,7 @@ type Article struct {
 	UpdatedAt      int64
 	FavoritesCount int64
 	Author         string
-	Dummy          byte // Always 0, used for sorting articles by CreatedAt
+	Dummy          byte // Always 0, used for sorting articles by index CreatedAt
 }
 
 type ArticleTag struct {
@@ -34,7 +34,7 @@ type ArticleTag struct {
 type Tag struct {
 	Tag          string
 	ArticleCount int64
-	Dummy        byte // Always 0, used for sorting articles by ArticleCount
+	Dummy        byte // Always 0, used for sorting articles by index ArticleCount
 }
 
 type FavoriteArticleKey struct {
