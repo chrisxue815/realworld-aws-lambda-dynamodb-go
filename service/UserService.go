@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -55,6 +58,7 @@ func PutUser(user model.User) error {
 		// TODO: distinguish:
 		// NewInputError("username", "has already been taken")
 		// NewInputError("email", "has already been taken")
+		fmt.Println(string(debug.Stack()))
 		return err
 	}
 
@@ -118,6 +122,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		TransactItems: transactItems,
 	})
 	if err != nil {
+		fmt.Println(string(debug.Stack()))
 		return err
 	}
 

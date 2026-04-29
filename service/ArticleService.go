@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
@@ -98,8 +100,12 @@ func putArticleWithRandomId(article *model.Article) error {
 	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
+	if err != nil {
+		fmt.Println(string(debug.Stack()))
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func GetArticles(offset, limit int, author, tag, favorited string) ([]model.Article, error) {
@@ -419,6 +425,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		TransactItems: transactItems,
 	})
 	if err != nil {
+		fmt.Println(string(debug.Stack()))
 		return err
 	}
 
@@ -507,6 +514,7 @@ func DeleteArticle(slug string, username string) error {
 		TransactItems: transactItems,
 	})
 	if err != nil {
+		fmt.Println(string(debug.Stack()))
 		return err
 	}
 

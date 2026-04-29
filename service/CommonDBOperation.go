@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -16,6 +19,7 @@ func GetItemByKey(tableName string, key AWSObject, out interface{}) (bool, error
 
 	output, err := DynamoDB().GetItem(context.TODO(), &input)
 	if err != nil {
+		fmt.Println(string(debug.Stack()))
 		return false, err
 	}
 
@@ -62,6 +66,7 @@ func BatchGetItems(batchGetInput *dynamodb.BatchGetItemInput, cap int) ([]map[st
 	for {
 		output, err := DynamoDB().BatchGetItem(context.TODO(), input)
 		if err != nil {
+			fmt.Println(string(debug.Stack()))
 			return nil, err
 		}
 		responses = append(responses, output.Responses)

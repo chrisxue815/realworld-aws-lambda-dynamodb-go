@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -50,8 +53,12 @@ func putCommentWithRandomId(comment *model.Comment) error {
 		Item:                commentItem,
 		ConditionExpression: aws.String("attribute_not_exists(CommentId)"),
 	})
+	if err != nil {
+		fmt.Println(string(debug.Stack()))
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func GetCommentRelatedProperties(user *model.User, comments []model.Comment) ([]model.User, []bool, error) {
@@ -126,6 +133,10 @@ func DeleteComment(slug string, commentId int64, username string) error {
 	}
 
 	_, err = DynamoDB().DeleteItem(context.TODO(), &deleteComment)
+	if err != nil {
+		fmt.Println(string(debug.Stack()))
+		return err
+	}
 
-	return err
+	return nil
 }

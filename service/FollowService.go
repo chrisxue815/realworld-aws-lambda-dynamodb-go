@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -82,8 +85,12 @@ func Follow(follower string, publisher string) error {
 	}
 
 	_, err = DynamoDB().PutItem(context.TODO(), &putFollow)
+	if err != nil {
+		fmt.Println(string(debug.Stack()))
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func Unfollow(follower string, publisher string) error {
@@ -103,6 +110,10 @@ func Unfollow(follower string, publisher string) error {
 	}
 
 	_, err = DynamoDB().DeleteItem(context.TODO(), &deleteFollow)
+	if err != nil {
+		fmt.Println(string(debug.Stack()))
+		return err
+	}
 
-	return err
+	return nil
 }
