@@ -1,16 +1,15 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
-type AWSObject = map[string]*dynamodb.AttributeValue
+type AWSObject = map[string]types.AttributeValue
 
 func StringKey(name, value string) AWSObject {
 	return AWSObject{
@@ -18,10 +17,8 @@ func StringKey(name, value string) AWSObject {
 	}
 }
 
-func StringValue(value string) *dynamodb.AttributeValue {
-	return &dynamodb.AttributeValue{
-		S: aws.String(value),
-	}
+func StringValue(value string) types.AttributeValue {
+	return &types.AttributeValueMemberS{Value: value}
 }
 
 func IntKey(name string, value int) AWSObject {
@@ -30,10 +27,8 @@ func IntKey(name string, value int) AWSObject {
 	}
 }
 
-func IntValue(value int) *dynamodb.AttributeValue {
-	return &dynamodb.AttributeValue{
-		N: aws.String(strconv.Itoa(value)),
-	}
+func IntValue(value int) types.AttributeValue {
+	return &types.AttributeValueMemberN{Value: strconv.Itoa(value)}
 }
 
 func Int64Key(name string, value int64) AWSObject {
@@ -42,16 +37,12 @@ func Int64Key(name string, value int64) AWSObject {
 	}
 }
 
-func Int64Value(value int64) *dynamodb.AttributeValue {
-	return &dynamodb.AttributeValue{
-		N: aws.String(strconv.FormatInt(value, 10)),
-	}
+func Int64Value(value int64) types.AttributeValue {
+	return &types.AttributeValueMemberN{Value: strconv.FormatInt(value, 10)}
 }
 
-func BlobValue(value []byte) *dynamodb.AttributeValue {
-	return &dynamodb.AttributeValue{
-		B: value,
-	}
+func BlobValue(value []byte) types.AttributeValue {
+	return &types.AttributeValueMemberB{Value: value}
 }
 
 func ReverseIndexInt64(values []int64) map[int64]int {
@@ -67,24 +58,19 @@ func IsUpdateBuilderEmpty(update expression.UpdateBuilder) bool {
 }
 
 func IsConditionalCheckFailed(err error) bool {
-	aerr, ok := err.(awserr.Error)
-	if !ok {
-		return false
+	var condCheckFailed *types.ConditionalCheckFailedException
+	if errors.As(err, &condCheckFailed) {
+		return true
 	}
 
-	switch aerr.Code() {
-	case dynamodb.ErrCodeConditionalCheckFailedException:
-		return true
-	case dynamodb.ErrCodeTransactionCanceledException:
-		// TODO: DynamoDB Go client doesn't provide individual cancellation reasons for a transaction.
-		// "If using Java, DynamoDB lists the cancellation reasons on the CancellationReasons
-		// property. This property is not set for other languages."
-		// https://docs.aws.amazon.com/sdk-for-go/api/service/dynamodb/#DynamoDB.TransactWriteItems
-		// Here we depend on awserr.Error.Message(), which looks like
-		// "Transaction cancelled, please refer cancellation reasons for specific reasons [ConditionalCheckFailed, None]"
-		// https://github.com/aws/aws-sdk-go/issues/2318
-		return strings.Contains(aerr.Message(), "ConditionalCheckFailed")
-	default:
-		return false
+	var txnCancelled *types.TransactionCanceledException
+	if errors.As(err, &txnCancelled) {
+		for _, reason := range txnCancelled.CancellationReasons {
+			if aws.ToString(reason.Code) == "ConditionalCheckFailed" {
+				return true
+			}
+		}
 	}
+
+	return false
 }

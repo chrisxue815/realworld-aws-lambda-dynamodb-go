@@ -1,9 +1,11 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -13,7 +15,7 @@ func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int6
 		IndexName:                 aws.String("FavoritedAt"),
 		KeyConditionExpression:    aws.String("Username=:username"),
 		ExpressionAttributeValues: StringKey(":username", username),
-		Limit:                     aws.Int64(int64(offset + limit)),
+		Limit:                     aws.Int32(int32(offset + limit)),
 		ScanIndexForward:          aws.Bool(false),
 		ProjectionExpression:      aws.String("ArticleId"),
 	}
@@ -24,7 +26,7 @@ func GetFavoriteArticleIdsByUsername(username string, offset, limit int) ([]int6
 	}
 
 	favoriteArticles := make([]model.FavoriteArticle, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &favoriteArticles)
+	err = attributevalue.UnmarshalListOfMaps(items, &favoriteArticles)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +54,7 @@ func IsArticleFavoritedByUser(user *model.User, articles []model.Article) ([]boo
 	}
 
 	batchGetFavoriteArticles := dynamodb.BatchGetItemInput{
-		RequestItems: map[string]*dynamodb.KeysAndAttributes{
+		RequestItems: map[string]types.KeysAndAttributes{
 			FavoriteArticleTableName: {
 				Keys:                 keys,
 				ProjectionExpression: aws.String("ArticleId"),
@@ -72,7 +74,7 @@ func IsArticleFavoritedByUser(user *model.User, articles []model.Article) ([]boo
 		for _, items := range response {
 			for _, item := range items {
 				favoriteArticle := model.FavoriteArticle{}
-				err = dynamodbattribute.UnmarshalMap(item, &favoriteArticle)
+				err = attributevalue.UnmarshalMap(item, &favoriteArticle)
 				if err != nil {
 					return nil, err
 				}
@@ -95,16 +97,16 @@ func reverseIndexArticleIds(articles []model.Article) map[int64]int {
 }
 
 func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
-	item, err := dynamodbattribute.MarshalMap(favoriteArticle)
+	item, err := attributevalue.MarshalMap(favoriteArticle)
 	if err != nil {
 		return err
 	}
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 2)
+	transactItems := make([]types.TransactWriteItem, 0, 2)
 
 	// Favorite the article
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Put: &dynamodb.Put{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Put: &types.Put{
 			TableName:           aws.String(FavoriteArticleTableName),
 			Item:                item,
 			ConditionExpression: aws.String("attribute_not_exists(Username) AND attribute_not_exists(ArticleId)"),
@@ -112,8 +114,8 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 	})
 
 	// Update favorites count
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Update: &dynamodb.Update{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Update: &types.Update{
 			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
@@ -122,7 +124,7 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 		},
 	})
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 
@@ -134,16 +136,16 @@ func SetFavoriteArticle(favoriteArticle model.FavoriteArticle) error {
 }
 
 func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
-	item, err := dynamodbattribute.MarshalMap(favoriteArticle)
+	item, err := attributevalue.MarshalMap(favoriteArticle)
 	if err != nil {
 		return err
 	}
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 2)
+	transactItems := make([]types.TransactWriteItem, 0, 2)
 
 	// Unfavorite the article
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Delete: &dynamodb.Delete{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Delete: &types.Delete{
 			TableName:           aws.String(FavoriteArticleTableName),
 			Key:                 item,
 			ConditionExpression: aws.String("attribute_exists(Username) AND attribute_exists(ArticleId)"),
@@ -151,8 +153,8 @@ func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
 	})
 
 	// Update favorites count
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Update: &dynamodb.Update{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Update: &types.Update{
 			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", favoriteArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
@@ -161,7 +163,7 @@ func UnfavoriteArticle(favoriteArticle model.FavoriteArticleKey) error {
 		},
 	})
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 

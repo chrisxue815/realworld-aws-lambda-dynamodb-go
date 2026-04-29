@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
 
@@ -13,7 +14,7 @@ func GetItemByKey(tableName string, key AWSObject, out interface{}) (bool, error
 		Key:       key,
 	}
 
-	output, err := DynamoDB().GetItem(&input)
+	output, err := DynamoDB().GetItem(context.TODO(), &input)
 	if err != nil {
 		return false, err
 	}
@@ -22,7 +23,7 @@ func GetItemByKey(tableName string, key AWSObject, out interface{}) (bool, error
 		return false, nil
 	}
 
-	err = dynamodbattribute.UnmarshalMap(output.Item, out)
+	err = attributevalue.UnmarshalMap(output.Item, out)
 	if err != nil {
 		return false, err
 	}
@@ -34,22 +35,21 @@ func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]AWSObject, 
 	items := make([]AWSObject, 0, cap)
 	resultIndex := 0
 
-	err := DynamoDB().QueryPages(queryInput, func(page *dynamodb.QueryOutput, lastPage bool) bool {
-		pageCount := len(page.Items)
+	paginator := dynamodb.NewQueryPaginator(DynamoDB(), queryInput)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.TODO())
+		if err != nil {
+			return nil, err
+		}
 
+		pageCount := len(page.Items)
 		if resultIndex+pageCount > offset {
 			start := util.MaxInt(0, offset-resultIndex)
 			for i := start; i < pageCount; i++ {
 				items = append(items, page.Items[i])
 			}
 		}
-
 		resultIndex += pageCount
-		return true
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
 	return items, nil
@@ -58,13 +58,19 @@ func QueryItems(queryInput *dynamodb.QueryInput, offset, cap int) ([]AWSObject, 
 func BatchGetItems(batchGetInput *dynamodb.BatchGetItemInput, cap int) ([]map[string][]AWSObject, error) {
 	responses := make([]map[string][]AWSObject, 0, cap)
 
-	err := DynamoDB().BatchGetItemPages(batchGetInput, func(page *dynamodb.BatchGetItemOutput, lastPage bool) bool {
-		responses = append(responses, page.Responses)
-		return true
-	})
-
-	if err != nil {
-		return nil, err
+	input := batchGetInput
+	for {
+		output, err := DynamoDB().BatchGetItem(context.TODO(), input)
+		if err != nil {
+			return nil, err
+		}
+		responses = append(responses, output.Responses)
+		if len(output.UnprocessedKeys) == 0 {
+			break
+		}
+		input = &dynamodb.BatchGetItemInput{
+			RequestItems: output.UnprocessedKeys,
+		}
 	}
 
 	return responses, nil

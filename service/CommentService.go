@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -38,13 +39,13 @@ func PutComment(comment *model.Comment) error {
 func putCommentWithRandomId(comment *model.Comment) error {
 	comment.CommentId = 1 + CommentIdRand.Get().Int63n(model.MaxCommentId-1) // range: [1, MaxCommentId)
 
-	commentItem, err := dynamodbattribute.MarshalMap(comment)
+	commentItem, err := attributevalue.MarshalMap(comment)
 	if err != nil {
 		return err
 	}
 
 	// Put a new article
-	_, err = DynamoDB().PutItem(&dynamodb.PutItemInput{
+	_, err = DynamoDB().PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName:           aws.String(CommentTableName),
 		Item:                commentItem,
 		ConditionExpression: aws.String("attribute_not_exists(CommentId)"),
@@ -93,7 +94,7 @@ func GetComments(slug string) ([]model.Comment, error) {
 	}
 
 	comments := make([]model.Comment, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &comments)
+	err = attributevalue.UnmarshalListOfMaps(items, &comments)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func DeleteComment(slug string, commentId int64, username string) error {
 		CommentId: commentId,
 	}
 
-	item, err := dynamodbattribute.MarshalMap(key)
+	item, err := attributevalue.MarshalMap(key)
 	if err != nil {
 		return err
 	}
@@ -124,7 +125,7 @@ func DeleteComment(slug string, commentId int64, username string) error {
 		ExpressionAttributeValues: StringKey(":username", username),
 	}
 
-	_, err = DynamoDB().DeleteItem(&deleteComment)
+	_, err = DynamoDB().DeleteItem(context.TODO(), &deleteComment)
 
 	return err
 }

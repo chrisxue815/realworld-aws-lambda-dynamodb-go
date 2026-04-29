@@ -1,9 +1,11 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -26,7 +28,7 @@ func IsFollowing(follower *model.User, publishers []string) ([]bool, error) {
 	}
 
 	batchGetFollows := dynamodb.BatchGetItemInput{
-		RequestItems: map[string]*dynamodb.KeysAndAttributes{
+		RequestItems: map[string]types.KeysAndAttributes{
 			FollowTableName: {
 				Keys:                 keys,
 				ProjectionExpression: aws.String("Publisher"),
@@ -45,7 +47,7 @@ func IsFollowing(follower *model.User, publishers []string) ([]bool, error) {
 		for _, items := range response {
 			for _, item := range items {
 				follow := model.Follow{}
-				err = dynamodbattribute.UnmarshalMap(item, &follow)
+				err = attributevalue.UnmarshalMap(item, &follow)
 				if err != nil {
 					return nil, err
 				}
@@ -69,7 +71,7 @@ func Follow(follower string, publisher string) error {
 		Publisher: publisher,
 	}
 
-	item, err := dynamodbattribute.MarshalMap(follow)
+	item, err := attributevalue.MarshalMap(follow)
 	if err != nil {
 		return err
 	}
@@ -79,7 +81,7 @@ func Follow(follower string, publisher string) error {
 		Item:      item,
 	}
 
-	_, err = DynamoDB().PutItem(&putFollow)
+	_, err = DynamoDB().PutItem(context.TODO(), &putFollow)
 
 	return err
 }
@@ -90,7 +92,7 @@ func Unfollow(follower string, publisher string) error {
 		Publisher: publisher,
 	}
 
-	item, err := dynamodbattribute.MarshalMap(follow)
+	item, err := attributevalue.MarshalMap(follow)
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func Unfollow(follower string, publisher string) error {
 		Key:       item,
 	}
 
-	_, err = DynamoDB().DeleteItem(&deleteFollow)
+	_, err = DynamoDB().DeleteItem(context.TODO(), &deleteFollow)
 
 	return err
 }

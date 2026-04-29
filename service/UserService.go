@@ -1,9 +1,11 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -13,7 +15,7 @@ func PutUser(user model.User) error {
 		return err
 	}
 
-	userItem, err := dynamodbattribute.MarshalMap(user)
+	userItem, err := attributevalue.MarshalMap(user)
 	if err != nil {
 		return err
 	}
@@ -23,23 +25,23 @@ func PutUser(user model.User) error {
 		Username: user.Username,
 	}
 
-	emailUserItem, err := dynamodbattribute.MarshalMap(emailUser)
+	emailUserItem, err := attributevalue.MarshalMap(emailUser)
 	if err != nil {
 		return err
 	}
 
 	// Put a new user, make sure username and email are unique
 	transaction := dynamodb.TransactWriteItemsInput{
-		TransactItems: []*dynamodb.TransactWriteItem{
+		TransactItems: []types.TransactWriteItem{
 			{
-				Put: &dynamodb.Put{
+				Put: &types.Put{
 					TableName:           aws.String(UserTableName),
 					Item:                userItem,
 					ConditionExpression: aws.String("attribute_not_exists(Username)"),
 				},
 			},
 			{
-				Put: &dynamodb.Put{
+				Put: &types.Put{
 					TableName:           aws.String(EmailUserTableName),
 					Item:                emailUserItem,
 					ConditionExpression: aws.String("attribute_not_exists(Email)"),
@@ -48,7 +50,7 @@ func PutUser(user model.User) error {
 		},
 	}
 
-	_, err = DynamoDB().TransactWriteItems(&transaction)
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &transaction)
 	if err != nil {
 		// TODO: distinguish:
 		// NewInputError("username", "has already been taken")
@@ -65,7 +67,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		return err
 	}
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 3)
+	transactItems := make([]types.TransactWriteItem, 0, 3)
 
 	if oldUser.Email != newUser.Email {
 		newEmailUser := model.EmailUser{
@@ -73,14 +75,14 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 			Username: newUser.Username,
 		}
 
-		newEmailUserItem, err := dynamodbattribute.MarshalMap(newEmailUser)
+		newEmailUserItem, err := attributevalue.MarshalMap(newEmailUser)
 		if err != nil {
 			return err
 		}
 
 		// Link user with the new email
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Put: &dynamodb.Put{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Put: &types.Put{
 				TableName:           aws.String(EmailUserTableName),
 				Item:                newEmailUserItem,
 				ConditionExpression: aws.String("attribute_not_exists(Email)"),
@@ -88,8 +90,8 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		})
 
 		// Unlink user from the old email
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Delete: &dynamodb.Delete{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Delete: &types.Delete{
 				TableName:           aws.String(EmailUserTableName),
 				Key:                 StringKey("Email", oldUser.Email),
 				ConditionExpression: aws.String("attribute_exists(Email)"),
@@ -97,14 +99,14 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		})
 	}
 
-	newUserItem, err := dynamodbattribute.MarshalMap(newUser)
+	newUserItem, err := attributevalue.MarshalMap(newUser)
 	if err != nil {
 		return err
 	}
 
 	// Update user info
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Put: &dynamodb.Put{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Put: &types.Put{
 			TableName:                 aws.String(UserTableName),
 			Item:                      newUserItem,
 			ConditionExpression:       aws.String("Email = :email"),
@@ -112,7 +114,7 @@ func UpdateUser(oldUser model.User, newUser model.User) error {
 		},
 	})
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 	if err != nil {
@@ -199,7 +201,7 @@ func GetUserListByUsername(usernames []string) ([]model.User, error) {
 	}
 
 	batchGetUsers := dynamodb.BatchGetItemInput{
-		RequestItems: map[string]*dynamodb.KeysAndAttributes{
+		RequestItems: map[string]types.KeysAndAttributes{
 			UserTableName: {
 				Keys: keys,
 			},
@@ -217,7 +219,7 @@ func GetUserListByUsername(usernames []string) ([]model.User, error) {
 		for _, items := range response {
 			for _, item := range items {
 				user := model.User{}
-				err = dynamodbattribute.UnmarshalMap(item, &user)
+				err = attributevalue.UnmarshalMap(item, &user)
 				if err != nil {
 					return nil, err
 				}

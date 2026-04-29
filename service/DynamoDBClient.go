@@ -1,23 +1,25 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"context"
 	"sync"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 var once sync.Once
-var svc *dynamodb.DynamoDB
+var svc *dynamodb.Client
 
 func initializeSingletons() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	svc = dynamodb.New(sess)
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+	svc = dynamodb.NewFromConfig(cfg)
 }
 
-func DynamoDB() *dynamodb.DynamoDB {
+func DynamoDB() *dynamodb.Client {
 	once.Do(initializeSingletons)
 	return svc
 }

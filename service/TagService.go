@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 )
 
@@ -15,7 +15,7 @@ func GetTags() ([]string, error) {
 		IndexName:                 aws.String("ArticleCount"),
 		KeyConditionExpression:    aws.String("Dummy=:zero"),
 		ExpressionAttributeValues: IntKey(":zero", 0),
-		Limit:                     aws.Int64(maxNumTags),
+		Limit:                     aws.Int32(maxNumTags),
 		ScanIndexForward:          aws.Bool(false),
 	}
 
@@ -25,7 +25,7 @@ func GetTags() ([]string, error) {
 	}
 
 	tagObjects := make([]model.Tag, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &tagObjects)
+	err = attributevalue.UnmarshalListOfMaps(items, &tagObjects)
 	if err != nil {
 		return nil, err
 	}

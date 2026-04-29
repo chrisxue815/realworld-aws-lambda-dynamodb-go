@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

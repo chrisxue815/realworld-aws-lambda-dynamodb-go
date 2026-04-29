@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/model"
 	"github.com/chrisxue815/realworld-aws-lambda-dynamodb-go/util"
 )
@@ -43,16 +45,16 @@ func putArticleWithRandomId(article *model.Article) error {
 	article.ArticleId = 1 + ArticleIdRand.Get().Int63n(model.MaxArticleId-1) // range: [1, MaxArticleId)
 	article.MakeSlug()
 
-	articleItem, err := dynamodbattribute.MarshalMap(article)
+	articleItem, err := attributevalue.MarshalMap(article)
 	if err != nil {
 		return err
 	}
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*len(article.TagList))
+	transactItems := make([]types.TransactWriteItem, 0, 1+2*len(article.TagList))
 
 	// Put a new article
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Put: &dynamodb.Put{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Put: &types.Put{
 			TableName:           aws.String(ArticleTableName),
 			Item:                articleItem,
 			ConditionExpression: aws.String("attribute_not_exists(ArticleId)"),
@@ -66,22 +68,22 @@ func putArticleWithRandomId(article *model.Article) error {
 			CreatedAt: article.CreatedAt,
 		}
 
-		item, err := dynamodbattribute.MarshalMap(articleTag)
+		item, err := attributevalue.MarshalMap(articleTag)
 		if err != nil {
 			return err
 		}
 
 		// Link article with tag
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Put: &dynamodb.Put{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Put: &types.Put{
 				TableName: aws.String(ArticleTagTableName),
 				Item:      item,
 			},
 		})
 
 		// Update article count for each tag
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Update: &dynamodb.Update{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Update: &types.Update{
 				TableName:        aws.String(TagTableName),
 				Key:              StringKey("Tag", tag),
 				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
@@ -93,7 +95,7 @@ func putArticleWithRandomId(article *model.Article) error {
 		})
 	}
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 
@@ -158,7 +160,7 @@ func getAllArticles(offset, limit int) ([]model.Article, error) {
 		IndexName:                 aws.String("CreatedAt"),
 		KeyConditionExpression:    aws.String("Dummy=:zero"),
 		ExpressionAttributeValues: IntKey(":zero", 0),
-		Limit:                     aws.Int64(int64(offset + limit)),
+		Limit:                     aws.Int32(int32(offset + limit)),
 		ScanIndexForward:          aws.Bool(false),
 	}
 
@@ -168,7 +170,7 @@ func getAllArticles(offset, limit int) ([]model.Article, error) {
 	}
 
 	articles := make([]model.Article, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &articles)
+	err = attributevalue.UnmarshalListOfMaps(items, &articles)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +184,7 @@ func getArticlesByAuthor(author string, offset, limit int) ([]model.Article, err
 		IndexName:                 aws.String("Author"),
 		KeyConditionExpression:    aws.String("Author=:author"),
 		ExpressionAttributeValues: StringKey(":author", author),
-		Limit:                     aws.Int64(int64(offset + limit)),
+		Limit:                     aws.Int32(int32(offset + limit)),
 		ScanIndexForward:          aws.Bool(false),
 	}
 
@@ -192,7 +194,7 @@ func getArticlesByAuthor(author string, offset, limit int) ([]model.Article, err
 	}
 
 	articles := make([]model.Article, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &articles)
+	err = attributevalue.UnmarshalListOfMaps(items, &articles)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +231,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 	}
 
 	batchGetArticles := dynamodb.BatchGetItemInput{
-		RequestItems: map[string]*dynamodb.KeysAndAttributes{
+		RequestItems: map[string]types.KeysAndAttributes{
 			ArticleTableName: {
 				Keys: keys,
 			},
@@ -248,7 +250,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 		for _, items := range response {
 			for _, item := range items {
 				article := model.Article{}
-				err = dynamodbattribute.UnmarshalMap(item, &article)
+				err = attributevalue.UnmarshalMap(item, &article)
 				if err != nil {
 					return nil, err
 				}
@@ -327,7 +329,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 	oldTags := oldTagSet.Difference(newTagSet)
 	newTags := newTagSet.Difference(oldTagSet)
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 1+2*len(oldTags)+2*len(newTags))
+	transactItems := make([]types.TransactWriteItem, 0, 1+2*len(oldTags)+2*len(newTags))
 
 	expr, err := buildArticleUpdateExpression(oldArticle, *newArticle, len(oldTags) != 0 || len(newTags) != 0)
 	if err != nil {
@@ -340,8 +342,8 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 	}
 
 	// Update article
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Update: &dynamodb.Update{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Update: &types.Update{
 			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", oldArticle.ArticleId),
 			ConditionExpression:       aws.String("attribute_exists(ArticleId)"),
@@ -353,8 +355,8 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 
 	for tag := range oldTags {
 		// Unlink article from tag
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Delete: &dynamodb.Delete{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Delete: &types.Delete{
 				TableName: aws.String(ArticleTagTableName),
 				Key: AWSObject{
 					"Tag":       StringValue(tag),
@@ -364,8 +366,8 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		})
 
 		// Update article count for each tag
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Update: &dynamodb.Update{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Update: &types.Update{
 				TableName:                 aws.String(TagTableName),
 				Key:                       StringKey("Tag", tag),
 				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
@@ -381,7 +383,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 			CreatedAt: oldArticle.CreatedAt,
 		}
 
-		item, err := dynamodbattribute.MarshalMap(articleTag)
+		item, err := attributevalue.MarshalMap(articleTag)
 		if err != nil {
 			return err
 		}
@@ -392,16 +394,16 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		//   Request 1:        A B      (Delete C)
 		//   Request 2:        A B C D  (Add    D)
 		//   There's a small chance for both requests to get through, leading to inconsistent result A B D
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Put: &dynamodb.Put{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Put: &types.Put{
 				TableName: aws.String(ArticleTagTableName),
 				Item:      item,
 			},
 		})
 
 		// Update article count for each tag
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Update: &dynamodb.Update{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Update: &types.Update{
 				TableName:        aws.String(TagTableName),
 				Key:              StringKey("Tag", tag),
 				UpdateExpression: aws.String("ADD ArticleCount :one SET Dummy=:zero"),
@@ -413,7 +415,7 @@ func UpdateArticle(oldArticle model.Article, newArticle *model.Article) error {
 		})
 	}
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 	if err != nil {
@@ -464,10 +466,10 @@ func DeleteArticle(slug string, username string) error {
 		return err
 	}
 
-	transactItems := make([]*dynamodb.TransactWriteItem, 0, 3+2*len(article.TagList))
+	transactItems := make([]types.TransactWriteItem, 0, 3+2*len(article.TagList))
 
-	transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-		Delete: &dynamodb.Delete{
+	transactItems = append(transactItems, types.TransactWriteItem{
+		Delete: &types.Delete{
 			TableName:                 aws.String(ArticleTableName),
 			Key:                       Int64Key("ArticleId", article.ArticleId),
 			ConditionExpression:       aws.String("Author=:username"),
@@ -481,8 +483,8 @@ func DeleteArticle(slug string, username string) error {
 	// offline (despite potential article id overwrite).
 
 	for _, tag := range article.TagList {
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Delete: &dynamodb.Delete{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Delete: &types.Delete{
 				TableName: aws.String(ArticleTagTableName),
 				Key: AWSObject{
 					"Tag":       StringValue(tag),
@@ -491,8 +493,8 @@ func DeleteArticle(slug string, username string) error {
 			},
 		})
 
-		transactItems = append(transactItems, &dynamodb.TransactWriteItem{
-			Update: &dynamodb.Update{
+		transactItems = append(transactItems, types.TransactWriteItem{
+			Update: &types.Update{
 				TableName:                 aws.String(TagTableName),
 				Key:                       StringKey("Tag", tag),
 				UpdateExpression:          aws.String("ADD ArticleCount :minus_one"),
@@ -501,7 +503,7 @@ func DeleteArticle(slug string, username string) error {
 		})
 	}
 
-	_, err = DynamoDB().TransactWriteItems(&dynamodb.TransactWriteItemsInput{
+	_, err = DynamoDB().TransactWriteItems(context.TODO(), &dynamodb.TransactWriteItemsInput{
 		TransactItems: transactItems,
 	})
 	if err != nil {
@@ -526,7 +528,7 @@ func GetFeed(username string, offset, limit int) ([]model.Article, error) {
 	}
 
 	follows := make([]model.Follow, 0, len(items))
-	err = dynamodbattribute.UnmarshalListOfMaps(items, &follows)
+	err = attributevalue.UnmarshalListOfMaps(items, &follows)
 	if err != nil {
 		return nil, err
 	}
