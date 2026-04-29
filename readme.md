@@ -2,7 +2,7 @@
 
 > ### AWS Lambda + DynamoDB + Go codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
-### [Demo](https://chrisxue815.github.io/realworld/build/#/)
+### [Demo](https://realworld-aws-lambda-dynamodb-go.vercel.app/)
 
 [![Build Status](https://travis-ci.org/chrisxue815/realworld-aws-lambda-dynamodb-go.svg?branch=master)](https://travis-ci.org/chrisxue815/realworld-aws-lambda-dynamodb-go)
 
@@ -16,8 +16,7 @@ For more information on how to this works with other frontends/backends, head ov
 
 ## Prerequisite
 
-* Install Go, Node.js, Serverless CLI, AWS CLI
-* In `angularjs-realworld-example-app`, run `npm install`
+* Install Go, Serverless CLI, AWS CLI
 
 ## Build and deploy backend
 
@@ -28,9 +27,7 @@ In the root directory of this project:
 
 ## Build and serve frontend
 
-In `angularjs-realworld-example-app`:
-
-* `npx gulp`
+https://github.com/chrisxue815/angular-realworld-example-app
 
 # How it works
 
