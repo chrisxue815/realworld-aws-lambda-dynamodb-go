@@ -249,8 +249,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 		return nil, err
 	}
 
-	articles := make([]model.Article, len(articleIds))
-	articleIdToIndex := ReverseIndexInt64(articleIds)
+	articles := make([]model.Article, 0, len(articleIds))
 
 	for _, response := range responses {
 		for _, items := range response {
@@ -261,8 +260,7 @@ func getArticlesByArticleIds(articleIds []int64, limit int) ([]model.Article, er
 					return nil, err
 				}
 
-				index := articleIdToIndex[article.ArticleId]
-				articles[index] = article
+				articles = append(articles, article)
 			}
 		}
 	}
